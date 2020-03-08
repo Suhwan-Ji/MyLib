@@ -3,11 +3,11 @@ import matplotlib
 
 
 class LineManager(matplotlib.lines.Line2D):
-    def __init__(self, x, y, scalelist=[1], poslist=[0], scale=1, offset=0, gain=1, **kwargs):
+    def __init__(self, x, y, scalelist=[1], poslist=[0], init_scale=1, init_position=5, offset=0, gain=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
 
-        self.yscalelist = LimitedList(scalelist, scale)
-        self.yposlist = LimitedList(poslist, poslist[0])
+        self.yscalelist = LimitedList(scalelist, init_scale)
+        self.yposlist = LimitedList(poslist, init_position)
         self.raw_ydata = self.get_ydata()
         self.offset = offset
         self.gain = gain

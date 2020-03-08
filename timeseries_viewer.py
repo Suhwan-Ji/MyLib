@@ -72,16 +72,42 @@ class TimeSeriesViewer():
             self.mp_start.set(self.mp_start.get() + tmpstep)
             self.update_main_picture()
 
-        ttk.Button(time_widget, text='<<', command=lambda: move_pic(where='left')).grid(row=0, column=0)
-        ttk.Button(time_widget, text='>>', command=lambda: move_pic(where='right')).grid(row=0, column=2)
+        time_scale = ttk.LabelFrame(time_widget,text='scale')
+        time_scale.grid(row=0,column=0,columnspan=2)
+        ttk.Button(time_scale, text='<<', command=lambda: move_pic(where='left')).grid(row=0, column=0)
+        ttk.Button(time_scale, text='>>', command=lambda: move_pic(where='right')).grid(row=0, column=2)
 
         timemax = self.data[self.time_col][len(self.data) - 1]
-        ttk.Scale(time_widget, orient=tk.HORIZONTAL, length=800, variable=self.mp_start, from_=0.0, to=timemax).grid(
+        ttk.Scale(time_scale, orient=tk.HORIZONTAL, length=400, variable=self.mp_start, from_=0.0, to=timemax).grid(
             row=0, column=1)
 
-        ttk.Label(time_widget, textvariable=self.mp_start).grid(row=1, column=1)
-        ttk.Label(time_widget, textvariable=self.mp_disp_step).grid(row=1, column=2)
-        ttk.Label(time_widget, textvariable=self.mp_mv_step).grid(row=1, column=3)
+        time_setter = ttk.LabelFrame(time_widget,text='setter')
+        time_setter.grid(row=1,column=0)
+
+
+        def set_div_time():
+            self.mp_disp_step.set(float(timestep.get()))
+            self.update_main_picture()
+        timestep = tk.StringVar()
+        ttk.Entry(time_setter,textvariable=timestep).grid(row=0,column=0)
+        ttk.Button(time_setter, text='한칸당 초 update',command=set_div_time).grid(row=0,column=1)
+        def set_move_time():
+            self.mp_mv_step.set(float(timestep_mv.get()))
+            self.update_main_picture()
+
+        timestep_mv = tk.StringVar()
+        ttk.Entry(time_setter,textvariable=timestep_mv).grid(row=1,column=0)
+        ttk.Button(time_setter, text='이동속도 update',command=set_move_time).grid(row=1,column=1)
+
+        time_result = ttk.LabelFrame(time_widget,text='result')
+        time_result.grid(row=1,column=1)
+
+        # ttk.Label(time_result, text='시작 : ').grid(row=0, column=0)
+        # ttk.Label(time_result, textvariable=self.mp_start).grid(row=0, column=1)
+        ttk.Label(time_result, text='한칸당(sec/div) : ').grid(row=1, column=0)
+        ttk.Label(time_result, textvariable=self.mp_disp_step).grid(row=1, column=1)
+        ttk.Label(time_result, text='이동속도(sec/click) : ').grid(row=2, column=0)
+        ttk.Label(time_result, textvariable=self.mp_mv_step).grid(row=2, column=1)
 
         tmp = lambda x: self.update_main_picture()
         self.ani = FuncAnimation(self.fig, tmp, interval=2000)
@@ -110,6 +136,7 @@ class TimeSeriesViewer():
         start = self.mp_start.get()
         end = start + self.mp_disp_step.get()
         self.main_pic.set_xlim(start, end)
+        # print(self.main_pic.get_yticks())
         self.canvas.draw()
 
     def _mp_draw_column(self, data_col, **kwargs):
@@ -174,9 +201,7 @@ if __name__ == '__main__':
     dlen = 30000
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
-    data['sin05'] = 1 * np.sin(2 * np.pi * 0.5 * data['time'])
-    data['cos01'] = 1 * np.cos(2 * np.pi * 0.1 * data['time'])
-    data['dat1'] = data['sin05'] + 2 * data['cos01']
-    data['dat2'] = 1 * np.random.randn(dlen) + 2 * data['cos01'] + 2 * data['time']
+    data['dat1'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
+    data['dat2'] = 1 * np.random.randn(dlen) + data['dat1']
 
     a = TimeSeriesViewer(data,draw_at_once=True)
