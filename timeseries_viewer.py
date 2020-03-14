@@ -17,7 +17,7 @@ def time_format(x):
 
 
 class TimeSeriesViewer(LineContainer):
-    def __init__(self, data=None, time_col='time', draw_at_once=False):
+    def __init__(self, data=None, time_col='time',main_col=None, draw_at_once=False):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
         self.win.geometry('1400x900')
@@ -36,12 +36,19 @@ class TimeSeriesViewer(LineContainer):
 
         self.create_data_selector([0, 1])
 
-        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 10]}, figsize=(10, 6))
+        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
+        self.fig.set_facecolor('grey')
 
-        self.main_pic = ax[1]
+        self.main_pic = ax[0]
         self.main_pic.set_ylim(0, 10)
         self.main_pic.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.main_pic.set_facecolor('grey')
         self.main_pic.grid(True)
+
+        self.sub_pic = ax[1]
+        if main_col is not None\
+            and main_col in self.datalist:
+            self.sub_pic.plot(self.data[self.time_col],self.data[main_col])
 
         self.mp_start = tk.DoubleVar(value=0)
         self.mp_disp_step = tk.DoubleVar(value=300)
@@ -119,15 +126,21 @@ class TimeSeriesViewer(LineContainer):
                      self.line_container._update_all_ywhenx(x,action='left')
                  elif event.button == MouseButton.RIGHT:
                      self.line_container._update_all_ywhenx(x, action='right')
-
+             elif event.inaxes == self.sub_pic:
+                 if event.button == MouseButton.LEFT:
+                     self.mp_start.set(event.xdata)
+                     self.update_main_picture()
 
         def click_callback(event):
-             if event.inaxes == self.main_pic:
-                 x = event.xdata
-                 if event.button == MouseButton.LEFT:
-                     self.line_container._update_all_ywhenx(x,action='left')
-                 elif event.button == MouseButton.RIGHT:
-                     self.line_container._update_all_ywhenx(x, action='right')
+            if event.inaxes == self.main_pic:
+                x = event.xdata
+                if event.button == MouseButton.LEFT:
+                    self.line_container._update_all_ywhenx(x,action='left')
+                elif event.button == MouseButton.RIGHT:
+                    self.line_container._update_all_ywhenx(x, action='right')
+            elif event.inaxes == self.sub_pic:
+                self.mp_start.set(event.xdata)
+                self.update_main_picture()
 
         # motion_notify_event scroll_event button_press_event draw_event
         self.canvas.mpl_connect('motion_notify_event', move_callback)
@@ -178,10 +191,10 @@ if __name__ == '__main__':
     dlen = 30000
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
-    data['dat1'] = 1#50.9
+    data['dat1'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + data['time']
     data['dat2'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
     data['dat3'] = 0.3 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data)
+    a = TimeSeriesViewer(data,main_col='dat1')

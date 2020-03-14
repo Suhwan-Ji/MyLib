@@ -164,10 +164,16 @@ class LineWidget(LineManager):
 
 class LineContainer():
     list_color = [
-        '#f01010',
-        '#10f010',
-        '#1010f0',
-        '#0f0f0f',
+        '#ff3333',
+        '#ff7632',
+        '#ffba32',
+        '#aaff00',
+        '#55fe32',
+        '#33dcfe',
+        '#7732fe',
+        '#ff32fe',
+        '#990066',
+        '#660022',
     ]
     def __init__(self, master):
         self.list_linewidget = {}
