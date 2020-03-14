@@ -35,7 +35,7 @@ class TimeSeriesViewer(LineContainer):
 
         self.create_data_selector([0, 1])
 
-        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 5]}, figsize=(10, 6))
+        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 10]}, figsize=(10, 6))
 
         self.main_pic = ax[1]
         self.main_pic.set_ylim(0, 10)
@@ -88,14 +88,14 @@ class TimeSeriesViewer(LineContainer):
         def set_div_time():
             self.mp_disp_step.set(float(timestep.get()))
             self.update_main_picture()
-        timestep = tk.StringVar()
+        timestep = tk.StringVar(value=self.mp_disp_step.get())
         ttk.Entry(time_setter,textvariable=timestep).grid(row=0,column=0)
         ttk.Button(time_setter, text='한칸당 초 update',command=set_div_time).grid(row=0,column=1)
         def set_move_time():
             self.mp_mv_step.set(float(timestep_mv.get()))
             self.update_main_picture()
 
-        timestep_mv = tk.StringVar()
+        timestep_mv = tk.StringVar(value=self.mp_mv_step.get())
         ttk.Entry(time_setter,textvariable=timestep_mv).grid(row=1,column=0)
         ttk.Button(time_setter, text='이동속도 update',command=set_move_time).grid(row=1,column=1)
 
@@ -156,8 +156,8 @@ if __name__ == '__main__':
     dlen = 30000
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
-    data['dat1'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
-    data['dat2'] = 2 * np.random.randn(dlen) + data['dat1']
+    data['dat1'] = 0.9
+    data['dat2'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
     data['dat3'] = 2 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 2 * np.random.randn(dlen) + data['dat3']

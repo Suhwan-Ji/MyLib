@@ -12,7 +12,7 @@ class LineManager(matplotlib.lines.Line2D):
 
         self.func_line_update = func_line_update
         self.raw_ydata = self.get_ydata()
-        self.modified_ydata = None
+        self.modified_ydata = self.raw_ydata
         self.offset = offset
         self.gain = gain
         self.position = position
@@ -118,7 +118,7 @@ class LineWidget(LineManager):
         self.spin1.grid(row=0, column=0)
         self.spin1.set(self.get_lm_value('position'))
 
-        self.frame_scale = tk.LabelFrame(self.manager, text='Scale')
+        self.frame_scale = tk.LabelFrame(self.manager, text='한칸당')
         self.frame_scale.grid(row=0, column=3)
         self.spin2 = ttk.Spinbox(self.frame_scale, values=self.list_scale, width=5, state='readonly')
         # self.spin2.config(values = [str(x) for x in self.list_scale])
@@ -140,9 +140,9 @@ class LineWidget(LineManager):
 
 class LineContainer():
     list_color = [
-        '#ff0000',
-        '#00ff00',
-        '#0000ff',
+        '#f01010',
+        '#10f010',
+        '#1010f0',
         '#0f0f0f',
     ]
     def __init__(self, master):
