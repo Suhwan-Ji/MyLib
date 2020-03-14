@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.animation import FuncAnimation
+from matplotlib.backend_bases import MouseButton
 
 from line_manager import *
 
@@ -110,6 +111,22 @@ class TimeSeriesViewer(LineContainer):
         tmp = lambda x: self.update_main_picture()
         self.ani = FuncAnimation(self.fig, tmp, interval=2000)
 
+        def move_callback(event):
+             if event.inaxes == self.main_pic:
+                 x = event.xdata
+                 self.line_container._update_all_ywhenx(x)
+
+        def click_callback(event):
+             if event.inaxes == self.main_pic:
+                 x = event.xdata
+                 if event.button == MouseButton.LEFT:
+                     self.line_container._update_all_ywhenx(x,action='left')
+                 elif event.button == MouseButton.RIGHT:
+                     self.line_container._update_all_ywhenx(x, action='right')
+
+        # motion_notify_event scroll_event button_press_event draw_event
+        self.canvas.mpl_connect('motion_notify_event', move_callback)
+        self.canvas.mpl_connect('button_press_event', click_callback)
     def create_data_selector(self,grid_pos):#,draw_at_once=False):
         container = ttk.LabelFrame(self.win, text='데이터 리스트')
         container.grid(row=grid_pos[0], column=grid_pos[1])
@@ -156,8 +173,8 @@ if __name__ == '__main__':
     dlen = 30000
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
-    data['dat1'] = 0.9
-    data['dat2'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
+    data['dat1'] = 1#50.9
+    data['dat2'] = 500000 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
     data['dat3'] = 2 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 2 * np.random.randn(dlen) + data['dat3']

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 class LineManager(matplotlib.lines.Line2D):
-    def __init__(self, x, y, func_line_update, offset=0, gain=1, position=5, scale=1, **kwargs):
+    def __init__(self, x, y, func_line_update, offset=0, gain=1, position=0, scale=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
 
         self.func_line_update = func_line_update
@@ -17,8 +17,11 @@ class LineManager(matplotlib.lines.Line2D):
         self.gain = gain
         self.position = position
         self.scale = scale
-
         self._update_line()
+
+    def get_rawy_whenx(self,x):
+        index = np.argmin(np.array(self.get_xdata()) < x)
+        return self.raw_ydata[index]
 
     def _update_modified_line(self):
         # 유저가 세팅한 값 계산
@@ -113,7 +116,7 @@ class LineWidget(LineManager):
 
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
-        self.spin1 = ttk.Spinbox(self.frame_position, from_=0, to=10.0,increment=0.1, width=5, state='readonly')
+        self.spin1 = ttk.Spinbox(self.frame_position, from_=0, to=10.0,increment=0.2, width=5, state='readonly')
         self.spin1.config(command=lambda: _update_lineitem('position', self.spin1))
         self.spin1.grid(row=0, column=0)
         self.spin1.set(self.get_lm_value('position'))
@@ -125,6 +128,27 @@ class LineWidget(LineManager):
         self.spin2.config(command=lambda: _update_lineitem('scale', self.spin2))
         self.spin2.grid(row=0, column=0)
         self.spin2.set(self.get_lm_value('scale'))
+
+        self.display_frame = ttk.LabelFrame(self.manager)
+        self.display_frame.grid(row=0,column=4)
+        self.current_yvalue = tk.StringVar(value="cur : ")
+        tk.Label(self.display_frame,textvariable=self.current_yvalue,
+                 width=15, anchor='w').grid(row=0,column=0)
+        self.left_yvalue = tk.StringVar(value="left : ")
+        tk.Label(self.display_frame, textvariable=self.left_yvalue,
+                 width=15, anchor='w').grid(row=1, column=0,sticky=tk.W) # justify=tk.LEFT
+        self.right_yvalue = tk.StringVar(value="right : ")
+        tk.Label(self.display_frame, textvariable=self.right_yvalue,
+                 width=15, anchor='w').grid(row=2, column=0,sticky=tk.W)
+
+    def update_ywhenx(self,x,action=None):
+        if action=='left':
+            self.left_yvalue.set(f'left : {self.get_rawy_whenx(x):.3f}')
+        elif action=='right':
+            self.right_yvalue.set(f'right : {self.get_rawy_whenx(x):.3f}')
+        else:
+            self.current_yvalue.set(f'cur : {self.get_rawy_whenx(x):.3f}')
+
 
     def remove_self(self):
         pass
@@ -194,6 +218,9 @@ class LineContainer():
 
     # def remove_linewidget(self,data_name):
     #     del self.list_linewidget[data_name]
+    def _update_all_ywhenx(self,x,action=None):
+        for line in self.list_linewidget.values():
+            line.update_ywhenx(x,action=action)
 
     def link_line(self, ax):
         pass
