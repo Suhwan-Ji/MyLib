@@ -16,7 +16,7 @@ def time_format(x):
     return f"{hour}: {minute}: {second}.{rest}"
 
 
-class TimeSeriesViewer(LineContainer):
+class TimeSeriesViewer():
     def __init__(self, data=None, time_col='time',main_col=None, draw_at_once=False):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
@@ -53,6 +53,9 @@ class TimeSeriesViewer(LineContainer):
         self.mp_start = tk.DoubleVar(value=0)
         self.mp_disp_step = tk.DoubleVar(value=300)
         self.mp_mv_step = tk.DoubleVar(value=60)
+
+        self.main_vertical_lines = {}
+        self.sub_vertical_lines = {}
 
         self.create_canvas(self.win, [0, 0])
 
@@ -119,32 +122,80 @@ class TimeSeriesViewer(LineContainer):
         self.ani = FuncAnimation(self.fig, tmp, interval=2000)
 
         def move_callback(event):
+             x = event.xdata
              if event.inaxes == self.main_pic:
-                 x = event.xdata
                  self.line_container._update_all_ywhenx(x)
                  if event.button == MouseButton.LEFT:
+                     if 'left' not in self.main_vertical_lines.keys():
+                         self.main_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+                                                                    linestyle='-')
+                     self.main_vertical_lines['left'].update_xdata(x)
                      self.line_container._update_all_ywhenx(x,action='left')
                  elif event.button == MouseButton.RIGHT:
+                     if 'right' not in self.main_vertical_lines.keys():
+                         self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+                                                                    linestyle=':')
+                     self.main_vertical_lines['right'].update_xdata(x)
                      self.line_container._update_all_ywhenx(x, action='right')
              elif event.inaxes == self.sub_pic:
                  if event.button == MouseButton.LEFT:
+                     if 'left' not in self.sub_vertical_lines.keys():
+                         self.sub_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.canvas.draw,
+                                                                         linestyle='-',color='green')
+                         self.sub_vertical_lines['right'] = VerticalLine(x+self.mp_disp_step.get(), self.canvas.draw,
+                                                                         self.update_main_picture,
+                                                                        linestyle=':', color='green')
+                     self.sub_vertical_lines['left'].update_xdata(x)
+                     self.sub_vertical_lines['right'].update_xdata(x+self.mp_disp_step.get())
                      self.mp_start.set(event.xdata)
                      self.update_main_picture()
 
         def click_callback(event):
+            x = event.xdata
             if event.inaxes == self.main_pic:
-                x = event.xdata
                 if event.button == MouseButton.LEFT:
+                    if 'left' not in self.main_vertical_lines.keys():
+                        self.main_vertical_lines['left'] = VerticalLine(x,self.main_pic,self.update_main_picture,
+                                                                   linestyle='-')
+                    self.main_vertical_lines['left'].update_xdata(x)
                     self.line_container._update_all_ywhenx(x,action='left')
                 elif event.button == MouseButton.RIGHT:
+                    if 'right' not in self.main_vertical_lines.keys():
+                        self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+                                                                    linestyle=':')
+                    self.main_vertical_lines['right'].update_xdata(x)
                     self.line_container._update_all_ywhenx(x, action='right')
             elif event.inaxes == self.sub_pic:
+                if 'left' not in self.sub_vertical_lines.keys():
+                    self.sub_vertical_lines['left'] = VerticalLine(x, self.sub_pic, self.canvas.draw,
+                                                                   y=[-10000,10000],
+                                                                   linestyle='-', color='black')
+                    self.sub_vertical_lines['right'] = VerticalLine(x + self.mp_disp_step.get(), self.sub_pic,
+                                                                    self.canvas.draw,
+                                                                    y=[-10000, 10000],
+                                                                    linestyle=':', color='black')
+                self.sub_vertical_lines['left'].update_xdata(x)
+                self.sub_vertical_lines['right'].update_xdata(x + self.mp_disp_step.get())
                 self.mp_start.set(event.xdata)
+                self.update_main_picture()
+
+        def scroll_callback(event):
+            if event.inaxes == self.sub_pic:
+                if event.button == 'up':
+                    tmp = self.mp_disp_step.get()
+                    self.mp_disp_step.set(tmp*1.5)
+                elif event.button == 'down':
+                    tmp = self.mp_disp_step.get()
+                    self.mp_disp_step.set(tmp / 1.5)
+                tmp = self.mp_start.get()
+                self.sub_vertical_lines['left'].update_xdata(tmp)
+                self.sub_vertical_lines['right'].update_xdata(tmp + self.mp_disp_step.get())
                 self.update_main_picture()
 
         # motion_notify_event scroll_event button_press_event draw_event
         self.canvas.mpl_connect('motion_notify_event', move_callback)
         self.canvas.mpl_connect('button_press_event', click_callback)
+        self.canvas.mpl_connect('scroll_event', scroll_callback)
     def create_data_selector(self,grid_pos):#,draw_at_once=False):
         container = ttk.LabelFrame(self.win, text='데이터 리스트')
         container.grid(row=grid_pos[0], column=grid_pos[1])
@@ -155,7 +206,7 @@ class TimeSeriesViewer(LineContainer):
         dselected = tk.StringVar(value=self.datalist[0])
         ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0)
         ttk.Button(choosers, text='Add',
-                   command=lambda: self.add_col(dselected.get())).grid(row=0, column=1)
+                   command=lambda: self.add_col(self.main_pic, dselected.get())).grid(row=0, column=1)
 
         # if draw_at_once:
         #     for i, dat in enumerate(self.datalist):
@@ -167,11 +218,23 @@ class TimeSeriesViewer(LineContainer):
         self.main_pic.set_xlim(start, end)
         self.canvas.draw()
 
-    def add_col(self,col,**kwargs):
-        tmpline = self.line_container.add_linewidget(self.data, col, self.canvas.draw, time_col=self.time_col, **kwargs)
-        if tmpline is not None:
-            self.main_pic.add_line(tmpline)
-        self.canvas.draw()
+    def update_plot(self):
+        pass
+        # start = self.mp_start.get()
+        # end = start + self.mp_disp_step.get()
+        # self.main_pic.set_xlim(start, end)
+        #
+        # self.sub_vertical_lines['left'].update_xdata(start)
+        # self.sub_vertical_lines['right'].update_xdata(end)
+        #
+        # self.canvas.draw()
+
+
+    def add_col(self,ax,col, **kwargs):
+        self.line_container.add_linewidget(ax, self.data, col, self.canvas.draw, time_col=self.time_col, **kwargs)
+        # if tmpline is not None:
+        #     self.main_pic.add_line(tmpline)
+        # self.canvas.draw()
 
     def _remove_line(self, col):
         pass
