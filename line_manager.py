@@ -6,11 +6,11 @@ from tkinter import ttk
 import pandas as pd
 import numpy as np
 
-
 class LineManager(matplotlib.lines.Line2D):
-    def __init__(self, x, y, offset=0, gain=1, position=5, scale=1, **kwargs):
+    def __init__(self, x, y, func_line_update, offset=0, gain=1, position=5, scale=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
 
+        self.func_line_update = func_line_update
         self.raw_ydata = self.get_ydata()
         self.modified_ydata = None
         self.offset = offset
@@ -34,6 +34,7 @@ class LineManager(matplotlib.lines.Line2D):
         self._update_modified_line()
         # Scale, Pos적용
         self._update_visual_line()
+        self.func_line_update()
 
     def set_lm_value(self, item, value):
         if item == 'gain':
@@ -61,6 +62,7 @@ class LineManager(matplotlib.lines.Line2D):
     def toggle_line(self):
         tmp = self.get_visible()
         self.set_visible(not tmp)
+        self.func_line_update()
 
     def set_style(self):
         pass
@@ -75,36 +77,43 @@ class LineWidget(LineManager):
     init_data['time'] = np.arange(300)
     init_data['var'] = np.random.randn(300)
 
-    init_list_poition = [x * 0.1 for x in range(100)]
+    #init_list_poition = [x * 0.1 for x in range(100)]
     init_list_scale = [10 ** x for x in np.arange(-2, 3, 1, dtype=float)]
 
     def __init__(self, master, func_line_update, data_col='var', time_col='time', data=None, **kwargs):
         if data is None:
             data = LineWidget.init_data
-        LineManager.__init__(self, data[time_col], data[data_col], **kwargs)
+        LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
 
         self.data_name = data_col
-        self.func_line_update = func_line_update
-        self.list_position = LineWidget.init_list_poition
+        #self.func_line_update = func_line_update
+        #self.list_position = LineWidget.init_list_poition
         self.list_scale = LineWidget.init_list_scale
 
         self.manager = tk.LabelFrame(master, text=self.data_name)
         self.manager.pack()
 
-        self.button_show = ttk.Button(self.manager, text='show', width=5)
-        self.button_show.config(command=self.toggle_line)
+        def _button_show_callback():
+            self.toggle_line()
+            print(self.get_color())
+            if self.get_visible():
+                self.button_show.config(background=self.get_color())
+            else:
+                self.button_show.config(background='grey')
+
+        self.button_show = tk.Button(self.manager, text='show', width=5, bg=self.get_color())
+        self.button_show.config(command=_button_show_callback)
         self.button_show.grid(row=0, column=0)
 
         def _update_lineitem(item,spinbox):
             tmp = float(spinbox.get())
             self.set_lm_value(item,tmp)
-            self.func_line_update()
-            print('{0} is now : {1}'.format(item, self.get_lm_value(item)))
+            #self.func_line_update()
+            #print('{0} is now : {1}'.format(item, self.get_lm_value(item)))
 
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
-        self.spin1 = ttk.Spinbox(self.frame_position, values=self.list_position, width=5, state='readonly')
-        self.spin1.config(values=self.list_position)
+        self.spin1 = ttk.Spinbox(self.frame_position, from_=0, to=10.0,increment=0.1, width=5, state='readonly')
         self.spin1.config(command=lambda: _update_lineitem('position', self.spin1))
         self.spin1.grid(row=0, column=0)
         self.spin1.set(self.get_lm_value('position'))
@@ -123,13 +132,19 @@ class LineWidget(LineManager):
         # self.manager.destroy()
 
     def __del__(self):
-        print(f'{self.data_name} is been deleted')
+        print(f'{self.data_name} has been deleted')
 
     def link_line(self, ax):
         self.linemanager.link_line(ax)
 
 
 class LineContainer():
+    list_color = [
+        '#ff0000',
+        '#00ff00',
+        '#0000ff',
+        '#0f0f0f',
+    ]
     def __init__(self, master):
         self.list_linewidget = {}
         self.container = tk.LabelFrame(master, text='Lines', bd=2)
@@ -147,7 +162,12 @@ class LineContainer():
 
     def add_linewidget(self, data, data_name, func_line_update, time_col='time', **kwargs):
         if data_name not in self.list_linewidget.keys():
-            tmp = LineWidget(self.dframe, func_line_update, data_col=data_name, time_col=time_col, data=data, **kwargs)
+            tmplen = len(LineContainer.list_color)
+            orderlen = len(self.list_linewidget)%tmplen
+            color = LineContainer.list_color[orderlen]
+
+            tmp = LineWidget(self.dframe, func_line_update, data_col=data_name, time_col=time_col, data=data,
+                             color=color,**kwargs)
             # delbutton = ttk.Button(self.dframe,text='del',command=lambda:self.remove_linewidget(data_name),width=5)
             # delbutton.grid(row=0,column=1)
             # tmp = {'linewidget':tmp, 'delbutton':delbutton}

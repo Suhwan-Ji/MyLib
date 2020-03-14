@@ -157,6 +157,9 @@ if __name__ == '__main__':
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
     data['dat1'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
-    data['dat2'] = 1 * np.random.randn(dlen) + data['dat1']
+    data['dat2'] = 2 * np.random.randn(dlen) + data['dat1']
+    data['dat3'] = 2 * np.random.randn(dlen) + data['dat2']
+    data['dat4'] = 2 * np.random.randn(dlen) + data['dat3']
+    data['dat5'] = 2 * np.random.randn(dlen) + data['dat3']
 
     a = TimeSeriesViewer(data)
