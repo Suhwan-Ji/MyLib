@@ -3,51 +3,65 @@ from func_util import LimitedList
 import matplotlib.lines
 import tkinter as tk
 from tkinter import ttk
+import pandas as pd
+import numpy as np
 
 
 class LineManager(matplotlib.lines.Line2D):
-    def __init__(self, x, y, scalelist=[1], poslist=[0], init_scale=1, init_position=5, offset=0, gain=1, **kwargs):
+    def __init__(self, x, y, offset=0, gain=1, position=0, scale=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
 
-        self.yscalelist = LimitedList(scalelist, init_scale)
-        self.yposlist = LimitedList(poslist, init_position)
         self.raw_ydata = self.get_ydata()
+        self.modified_ydata = None
         self.offset = offset
         self.gain = gain
+        self.position = position
+        self.scale = scale
 
         self._update_line()
+
+    def _update_modified_line(self):
+        # 유저가 세팅한 값 계산
+        self.modified_ydata = self.raw_ydata * self.gain + self.offset
+
+    def _update_visual_line(self):
+        # 플로팅될 값 계산
+        tmpdata = self.modified_ydata * self.scale + self.position
+        self.set_ydata(tmpdata)
 
     def _update_line(self):
         # 계산값 우선적용
-        tmpdata = self.raw_ydata * self.gain + self.offset
+        self._update_modified_line()
         # Scale, Pos적용
-        tmpdata = tmpdata * self.yscalelist.get_now() + self.yposlist.get_now()
-        self.set_ydata(tmpdata)
+        self._update_visual_line()
 
-    def change_state(self, item, method=None, step=1):
-        if item == 'position':
-            tmplist = self.yposlist
-        elif item == 'scale':
-            tmplist = self.yscalelist
-
-        if method == '+':
-            tmplist._next(step)
-        elif method == '-':
-            tmplist._before(step)
-        self._update_line()
-
-    def set_value(self, item, value):
+    def set_lm_value(self, item, value):
         if item == 'gain':
             self.gain = value
         elif item == 'offset':
             self.offset = value
+        elif item == 'position':
+            self.position = value
+        elif item == 'scale':
+            self.scale = value
         self._update_line()
+
+    def get_lm_value(self, item):
+        tmp = 0
+        if item == 'gain':
+            tmp = self.gain
+        elif item == 'offset':
+            tmp = self.offset
+        elif item == 'position':
+            tmp = self.position
+        elif item == 'scale':
+            tmp = self.scale
+        return tmp
 
     def toggle_line(self):
         tmp = self.get_visible()
         self.set_visible(not tmp)
-    def link_line(self,ax):
-        ax.add_line(self)
+
     def set_style(self):
         pass
 
@@ -57,45 +71,49 @@ class LineManager(matplotlib.lines.Line2D):
 
 
 class LineWidget(LineManager):
+    init_data = pd.DataFrame()
+    init_data['time'] = np.arange(300)
+    init_data['var'] = np.random.randn(300)
+
+    init_list_poition = [x * 0.1 for x in range(100)]
+    init_list_scale = [10 ** x for x in np.arange(-2, 3, 1, dtype=float)]
+
     def __init__(self, master, data_col='var', time_col='time', data=None, **kwargs):
+        if data is None:
+            data = LineWidget.init_data
+        LineManager.__init__(self, data[time_col], data[data_col], **kwargs)
+
         self.data_name = data_col
-        self.linemanager = LineManager(data[time_col], data[data_col], **kwargs)
+        self.list_position = LineWidget.init_list_poition
+        self.list_scale = LineWidget.init_list_scale
 
         self.manager = tk.LabelFrame(master, text=self.data_name)
         self.manager.pack()
 
         self.button_show = ttk.Button(self.manager, text='show', width=5)
-        self.button_show.config(command=self.linemanager.toggle_line)
+        self.button_show.config(command=self.toggle_line)
         self.button_show.grid(row=0, column=0)
 
-        def _update_lineitem(spinbox):
+        def _update_lineitem(item,spinbox):
             tmp = float(spinbox.get())
-            spinbox.lm.set_value(tmp)
+            self.set_lm_value(item,tmp)
+            print('{0} is now : {1}'.format(item, self.get_lm_value(item)))
 
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
-
-        tmplm = self.linemanager.yposlist
-        tmpdat = [str(a) for a in tmplm.dlist]
-        self.spin1 = ttk.Spinbox(self.frame_position, width=5, state='readonly')
-        self.spin1.config(command=lambda: _update_lineitem(self.spin1))
-        self.spin1.config(values=tmpdat)  # tmplist.dlist)
-        self.spin1.lm = tmplm
+        self.spin1 = ttk.Spinbox(self.frame_position, width=5, values=self.list_position, state='readonly')
+        self.spin1.config(command=lambda: _update_lineitem('position', self.spin1))
         self.spin1.grid(row=0, column=0)
-        self.spin1.set(tmplm.get_now())
+        self.spin1.set(self.get_lm_value('position'))
 
         self.frame_scale = tk.LabelFrame(self.manager, text='Scale')
         self.frame_scale.grid(row=0, column=3)
-
-        tmplm = self.linemanager.yscalelist
-        tmpdat = [str(a) for a in tmplm.dlist]
-        self.spin2 = ttk.Spinbox(self.frame_scale, width=5, state='readonly')
-        self.spin2.config(command=lambda: _update_lineitem(self.spin2))
-        self.spin2.config(values=tmpdat)
-        self.spin2.lm = tmplm
+        self.spin2 = ttk.Spinbox(self.frame_scale, width=5, values=self.list_scale, state='readonly')
+        self.spin2.config(command=lambda: _update_lineitem('scale', self.spin2))
         self.spin2.grid(row=0, column=0)
-        self.spin2.set(tmplm.get_now())
-    def link_line(self,ax):
+        self.spin2.set(self.get_lm_value('scale'))
+
+    def link_line(self, ax):
         self.linemanager.link_line(ax)
 
 
@@ -118,13 +136,13 @@ class LineContainer():
         self.canvas.configure(scrollregion=self.canvas.bbox('all'),
                               yscrollcommand=self.bar.set)
 
-    def add_lw(self, data, data_name,ax,**kwargs):
-        tmp = LineWidget(self.dframe, data_col=data_name, time_col='time', data=data,**kwargs)
+    def add_lw(self, data, data_name, **kwargs):
+        tmp = LineWidget(self.dframe, data_col=data_name, time_col='time', data=data, **kwargs)
         self.lw_list.append(tmp)
-        tmp.link_line(ax)
 
         self.canvas.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox('all'),
                               yscrollcommand=self.bar.set)
-    def link_line(self,ax):
+
+    def link_line(self, ax):
         pass
