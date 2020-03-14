@@ -115,6 +115,11 @@ class TimeSeriesViewer(LineContainer):
              if event.inaxes == self.main_pic:
                  x = event.xdata
                  self.line_container._update_all_ywhenx(x)
+                 if event.button == MouseButton.LEFT:
+                     self.line_container._update_all_ywhenx(x,action='left')
+                 elif event.button == MouseButton.RIGHT:
+                     self.line_container._update_all_ywhenx(x, action='right')
+
 
         def click_callback(event):
              if event.inaxes == self.main_pic:
@@ -174,9 +179,9 @@ if __name__ == '__main__':
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
     data['dat1'] = 1#50.9
-    data['dat2'] = 500000 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
-    data['dat3'] = 2 * np.random.randn(dlen) + data['dat2']
-    data['dat4'] = 2 * np.random.randn(dlen) + data['dat3']
-    data['dat5'] = 2 * np.random.randn(dlen) + data['dat3']
+    data['dat2'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
+    data['dat3'] = 0.3 * np.random.randn(dlen) + data['dat2']
+    data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
+    data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
     a = TimeSeriesViewer(data)
