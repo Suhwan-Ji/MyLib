@@ -28,6 +28,8 @@ class LimitedList():
     def get_index(self,val):
         value = self.transform_value(val)
         return np.where(self.dlist == value)[0][0]
+    def set_value(self,value):
+        self.index_now = self.get_index(value)
     def get_now(self):
         return self.dlist[self.index_now]
     def _next(self,step=1):
