@@ -23,9 +23,9 @@ container = lc.container
 container.pack()
 
 
-lc.add_lw(data,'sin')
-lc.add_lw(data,'cos')
-lc.add_lw(data,'random')
+lc.add_linewidget(data,'sin')
+lc.add_linewidget(data,'cos')
+lc.add_linewidget(data,'random')
 
 win.mainloop()
 

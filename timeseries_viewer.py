@@ -15,10 +15,13 @@ def time_format(x):
     return f"{hour}: {minute}: {second}.{rest}"
 
 
-class TimeSeriesViewer():
+class TimeSeriesViewer(LineContainer):
     def __init__(self, data=None, time_col='time', draw_at_once=False):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
+        self.win.geometry('1400x900')
+        self.win.resizable(width=False,height=False)#=False# config(resizable=False)
+
         if data is not None:
             self.data = data
             self.datalist = data.columns[1:]
@@ -27,14 +30,12 @@ class TimeSeriesViewer():
             pass
         self.time_col = time_col
 
-        self.linelist = {}
-        self.line_statemanager = {}
+        self.line_container = LineContainer(self.win)
+        self.line_container.container.grid(row=1, column=1)
 
-        self.scalelist = [0.1, 0.2, 0.5, 1, 5, 10, 50, 100]
-        div = 0.1
-        self.positionlist = np.arange(0, 10 + div, div)
+        self.create_data_selector([0, 1])
 
-        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 5]}, figsize=(10, 8))
+        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 5]}, figsize=(10, 6))
 
         self.main_pic = ax[1]
         self.main_pic.set_ylim(0, 10)
@@ -46,7 +47,6 @@ class TimeSeriesViewer():
         self.mp_mv_step = tk.DoubleVar(value=60)
 
         self.create_canvas(self.win, [0, 0])
-        self.create_data_list(self.win, [0, 1], draw_at_once)
 
         self.update_main_picture()
 
@@ -54,7 +54,7 @@ class TimeSeriesViewer():
 
     def create_canvas(self, master, grid_pos):
         container = ttk.LabelFrame(master, text='플로터')
-        container.grid(row=grid_pos[0], column=grid_pos[1])
+        container.grid(row=grid_pos[0], column=grid_pos[1],rowspan=2)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=container)
         self.canvas.get_tk_widget().grid(row=0, column=0)
@@ -102,8 +102,6 @@ class TimeSeriesViewer():
         time_result = ttk.LabelFrame(time_widget,text='result')
         time_result.grid(row=1,column=1)
 
-        # ttk.Label(time_result, text='시작 : ').grid(row=0, column=0)
-        # ttk.Label(time_result, textvariable=self.mp_start).grid(row=0, column=1)
         ttk.Label(time_result, text='한칸당(sec/div) : ').grid(row=1, column=0)
         ttk.Label(time_result, textvariable=self.mp_disp_step).grid(row=1, column=1)
         ttk.Label(time_result, text='이동속도(sec/click) : ').grid(row=2, column=0)
@@ -112,87 +110,44 @@ class TimeSeriesViewer():
         tmp = lambda x: self.update_main_picture()
         self.ani = FuncAnimation(self.fig, tmp, interval=2000)
 
-    def create_data_list(self, master, grid_pos, draw_at_once):
-        container = ttk.LabelFrame(master, text='데이터 리스트')
+    def create_data_selector(self,grid_pos):#,draw_at_once=False):
+        container = ttk.LabelFrame(self.win, text='데이터 리스트')
         container.grid(row=grid_pos[0], column=grid_pos[1])
 
         choosers = ttk.LabelFrame(container, text='선택스')
         choosers.pack()
 
-        param = {
-            'func_draw': self._mp_draw_column,
-            'func_change': self._change_line
-        }
         dselected = tk.StringVar(value=self.datalist[0])
         ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0)
         ttk.Button(choosers, text='Add',
-                   command=lambda: self._add_linesatemanager(container, dselected.get(), **param)).grid(row=0, column=1)
+                   command=lambda: self.add_col(dselected.get())).grid(row=0, column=1)
 
-        if draw_at_once:
-            for i, dat in enumerate(self.datalist):
-                self._add_linesatemanager(container, dat, **param)
+        # if draw_at_once:
+        #     for i, dat in enumerate(self.datalist):
+        #         self.add_col(dat)
 
     def update_main_picture(self):
         start = self.mp_start.get()
         end = start + self.mp_disp_step.get()
         self.main_pic.set_xlim(start, end)
-        # print(self.main_pic.get_yticks())
         self.canvas.draw()
 
-    def _mp_draw_column(self, data_col, **kwargs):
-        if data_col not in self.linelist.keys():
-            tmpline = LineManager(self.data[self.time_col], self.data[data_col], scalelist=self.scalelist,
-                                  poslist=self.positionlist,**kwargs)
+    def add_col(self,col,**kwargs):
+        tmpline = self.line_container.add_linewidget(self.data, col, self.canvas.draw, time_col=self.time_col, **kwargs)
+        if tmpline is not None:
             self.main_pic.add_line(tmpline)
-            self.linelist[data_col] = tmpline
-        else:
-            self.linelist[data_col].toggle_line()
         self.canvas.draw()
-
-    def _change_line(self, data_col, item, method='+', step=1):
-        if data_col not in self.linelist.keys():
-            return 0
-        line = self.linelist[data_col]
-        line.change_state(item, method, step)
-        self.canvas.draw()
-
-    def _add_linesatemanager(self, master, col, func_draw, func_change):
-        if col in self.line_statemanager.keys():
-            return None
-        manager = ttk.LabelFrame(master)
-        self.line_statemanager[col] = manager
-        manager.pack()
-        ttk.Label(manager, text=col).grid(row=0, column=0, rowspan=4)
-        ttk.Button(manager, text='Draw', command=lambda d=col: func_draw(d), width=5).grid(row=0, column=1, rowspan=4)
-        ttk.Button(manager, text='pos ++', command=lambda d=col: func_change(d, 'position', method='+', step=10),
-                   width=5).grid(row=0, column=2)
-        ttk.Button(manager, text='pos +', command=lambda d=col: func_change(d, 'position', method='+', step=1),
-                   width=5).grid(row=1, column=2)
-        ttk.Button(manager, text='pos -', command=lambda d=col: func_change(d, 'position', method='-', step=1),
-                   width=5).grid(row=2, column=2)
-        ttk.Button(manager, text='pos --', command=lambda d=col: func_change(d, 'position', method='-', step=10),
-                   width=5).grid(row=3, column=2)
-        ttk.Button(manager, text='scale +', command=lambda d=col: func_change(d, 'scale', method='+', step=1),
-                   width=5).grid(
-            row=0, column=3, rowspan=2)
-        ttk.Button(manager, text='scale -', command=lambda d=col: func_change(d, 'scale', method='-', step=1),
-                   width=5).grid(
-            row=2, column=3, rowspan=2)
-
-        ttk.Button(manager, text='remove', command=lambda d=col: self._remove_line(d), width=5).grid(row=0, column=4,
-                                                                                                     rowspan=4)
-
-        self._mp_draw_column(col)
 
     def _remove_line(self, col):
-        if col in self.line_statemanager.keys():
-            self.line_statemanager[col].destroy()
-            del self.line_statemanager[col]
-
-        if col in self.linelist.keys():
-            self.linelist[col].destroy()
-            del self.linelist[col]
-        self.canvas.draw()
+        pass
+        # if col in self.line_statemanager.keys():
+        #     self.line_statemanager[col].destroy()
+        #     del self.line_statemanager[col]
+        #
+        # if col in self.linelist.keys():
+        #     self.linelist[col].destroy()
+        #     del self.linelist[col]
+        # self.canvas.draw()
 
 if __name__ == '__main__':
     import pandas as pd
@@ -204,4 +159,4 @@ if __name__ == '__main__':
     data['dat1'] = 3 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
     data['dat2'] = 1 * np.random.randn(dlen) + data['dat1']
 
-    a = TimeSeriesViewer(data,draw_at_once=True)
+    a = TimeSeriesViewer(data)
