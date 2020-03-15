@@ -2,12 +2,16 @@
 # from tkinter import ttk
 # import numpy as np
 # #import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 # from matplotlib.animation import FuncAnimation
 from matplotlib.backend_bases import MouseButton
-
 from func_util import *
 from line_manager import *
+
+mpl.rcParams['path.simplify'] = True
+mpl.rcParams['path.simplify_threshold'] = 0.99
+mpl.rcParams['agg.path.chunksize'] = 10000
 
 def time_format(x):
     hour, rest = np.divmod(x, 3600)
@@ -183,7 +187,7 @@ class TimeSeriesViewer():
 
     def add_col(self,ax,col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
-                                           alpha=0.5, marker='o',markersize=1)
+                                           alpha=0.5, drawstyle='steps-post')#marker='o',markersize=1,
 
 if __name__ == '__main__':
     import pandas as pd

@@ -240,7 +240,7 @@ class LineContainer():
             ax.add_line(tmp)
             self._update_widget()
             func_line_update()
-            print(self.list_linewidget)
+            # print(self.list_linewidget)
             #return tmp
 
         #return None
