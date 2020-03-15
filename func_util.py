@@ -4,7 +4,10 @@ def isiter(x):
     """Check whether input is iterable"""
     try:
         iter(x)
-        return True
+        if type(x) == str:
+            return False
+        else:
+            return True
     except:
         return False
 

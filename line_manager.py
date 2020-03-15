@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import numpy as np
 
+
 class LineManager(matplotlib.lines.Line2D):
     def __init__(self, x, y, func_line_update, offset=0, gain=1, position=0, scale=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
