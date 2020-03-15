@@ -7,6 +7,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import numpy as np
 
+def time_format(x):
+    hour, rest = np.divmod(x, 3600)
+    minute, second = np.divmod(rest, 60)
+    #second, rest = np.divmod(rest, 100)
+    return f"{int(hour)}시간 {int(minute)}분\n{second:.3f}초"
 
 class LineManager(matplotlib.lines.Line2D):
     def __init__(self, x, y, func_line_update, offset=0, gain=1, position=0, scale=1, **kwargs):
@@ -19,14 +24,21 @@ class LineManager(matplotlib.lines.Line2D):
         self.gain = gain
         self.position = position
         self.scale = scale
+
+        self.time_selected_start = 0
+        self.time_selected_end = 0
+
         self._update_line()
 
     def get_rawy_whenx(self,x,which='raw'):
         index = np.argmin(np.array(self.get_xdata()) < x) - 1
-        if which == 'modified':
-            return self.modified_ydata[index]
-        else:
-            return self.raw_ydata[index]
+        try:
+            if which == 'modified':
+                return self.modified_ydata[index]
+            else:
+                return self.raw_ydata[index]
+        except:
+            return 0
 
     def _update_modified_line(self):
         # 유저가 세팅한 값 계산
@@ -150,7 +162,6 @@ class LineWidget(LineManager):
         self.frame_scale = tk.LabelFrame(self.manager, text='한칸당')
         self.frame_scale.grid(row=0, column=3)
         self.spin2 = ttk.Spinbox(self.frame_scale, values=self.list_scale, width=5, state='readonly')
-        # self.spin2.config(values = [str(x) for x in self.list_scale])
         self.spin2.config(command=lambda: _update_lineitem('scale', self.spin2))
         self.spin2.grid(row=0, column=0)
         self.spin2.set(self.get_lm_value('scale'))
@@ -178,10 +189,13 @@ class LineWidget(LineManager):
     def update_ywhenx(self,x,action=None):
         if action=='left':
             self.left_yvalue.set(f'left : {self.get_rawy_whenx(x,which="modified"):.3f}')
+            self.time_selected_start = x
         elif action=='right':
             self.right_yvalue.set(f'right : {self.get_rawy_whenx(x,which="modified"):.3f}')
+            self.time_selected_end = x
         # else:
         #     self.current_yvalue.set(f'cur : {self.get_rawy_whenx(x):.3f}')
+
 
 
     def remove_self(self):
@@ -209,12 +223,20 @@ class LineContainer():
         '#990066',
         '#660022',
     ]
-    def __init__(self, master):
+    def __init__(self, master,grid_pos):
         self.list_linewidget = {}
         self.container = tk.LabelFrame(master, text='Lines', bd=2)
-        #self.container.pack()
-        self.canvas = tk.Canvas(self.container, width=400, height=800)
-        self.bar = tk.Scrollbar(self.container)
+        self.container.grid(row=grid_pos[0], column=grid_pos[1])
+
+        self.time_container = tk.LabelFrame(self.container, text='Times', bd=2)
+        self.time_container.grid(row=0)
+        self._add_timeindicator(self.time_container)
+
+        self.widget_container = tk.LabelFrame(self.container, text='Widgets', bd=2)
+        self.widget_container.grid(row=1,columnspan=3)
+
+        self.canvas = tk.Canvas(self.widget_container, width=300, height=800)
+        self.bar = tk.Scrollbar(self.widget_container)
         self.bar["command"] = self.canvas.yview
         self.canvas.pack(side='left')  # fill='both', expand=True, side='left')
         self.bar.pack(fill='y', side='right')
@@ -223,6 +245,25 @@ class LineContainer():
 
         self.canvas.create_window(0, 0, window=self.dframe)
         self._update_widget()
+
+    def _add_timeindicator(self,master):
+        self.time_selected_left = tk.StringVar(value='Start : \n\n')
+        self.time_selected_right = tk.StringVar(value='End : \n\n')
+        self.time_selected_delta = tk.StringVar(value='Delata : \n\n')
+
+        ttk.Label(master,textvariable=self.time_selected_left,
+                  width=12, anchor='w').grid(row=0, column=0)
+        ttk.Label(master, textvariable=self.time_selected_right,
+                  width=12, anchor='w').grid(row=0, column=1)
+        ttk.Label(master, textvariable=self.time_selected_delta,
+                  width=12, anchor='w').grid(row=0, column=2)
+
+        # tk.Label(container,textvariable= self.)
+        # if action=='left':
+        #     self.left_yvalue.set(f'left : {self.get_rawy_whenx(x,which="modified"):.3f}')
+        # elif action=='right':
+        #     self.right_yvalue.set(f'right : {self.get_rawy_whenx(x,which="modified"):.3f}')
+        #
 
     def add_linewidget(self, ax, data, data_name, func_line_update, time_col='time', **kwargs):
         if data_name not in self.list_linewidget.keys():
@@ -260,6 +301,10 @@ class LineContainer():
     def update_all_ywhenx(self,x,action=None):
         for line in self.list_linewidget.values():
             line.update_ywhenx(x,action=action)
+        self.time_selected_left.set(f'Start : \n{time_format(line.time_selected_start)}')
+        self.time_selected_right.set(f'End : \n{time_format(line.time_selected_end)}')
+        tmp = abs(line.time_selected_end - line.time_selected_start)
+        self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
 
     def link_line(self, ax):
         pass

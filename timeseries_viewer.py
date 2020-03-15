@@ -13,12 +13,6 @@ mpl.rcParams['path.simplify'] = True
 mpl.rcParams['path.simplify_threshold'] = 0.99
 mpl.rcParams['agg.path.chunksize'] = 10000
 
-def time_format(x):
-    hour, rest = np.divmod(x, 3600)
-    minute, rest = np.divmod(rest, 60)
-    second, rest = np.divmod(rest, 60)
-    return f"{hour}: {minute}: {second}.{rest}"
-
 
 class TimeSeriesViewer():
     def __init__(self, data=None, time_col='time', main_col=None, predraw_col=None, draw_at_once=False):
@@ -51,8 +45,8 @@ class TimeSeriesViewer():
         self.create_data_selector(self.win, [0, 1])
 
         # Create LineContainer
-        self.line_container = LineContainer(self.win)
-        self.line_container.container.grid(row=1, column=1)
+        self.line_container = LineContainer(self.win,[1, 1])
+        #self.line_container.container.grid(row=1, column=1)
 
         # Create Canvas
         self.canvas = PlottingCanvas(self.win, self.fig, [0, 0])
@@ -77,8 +71,8 @@ class TimeSeriesViewer():
         self.pic_main.set_facecolor('grey')
         self.pic_main.grid(True)
         self.pic_main.start = tk.DoubleVar(value=0)
-        self.pic_main.disp_step = tk.DoubleVar(value=300)
-        self.pic_main.move_step = tk.DoubleVar(value=60)
+        self.pic_main.disp_step = tk.DoubleVar(value=30)
+        self.pic_main.move_step = tk.DoubleVar(value=10)
         # Vertical lines container
         self.pic_main.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_main, self.canvas.update,
                                                         linestyle='-',color='darkblue'),
@@ -193,7 +187,7 @@ if __name__ == '__main__':
     import pandas as pd
     import numpy as np
     data = pd.DataFrame()
-    dlen = 30000
+    dlen = 3000
     Ts = 0.1
     data['time'] = np.arange(0, dlen * Ts, Ts)
     data['dat1'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + data['time']
@@ -201,5 +195,28 @@ if __name__ == '__main__':
     data['dat3'] = 0.3 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat6'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat7'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat8'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat9'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat10'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat11'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat12'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat13'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat14'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat15'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat16'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat17'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat18'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat19'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat20'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat21'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat22'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat23'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat24'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat25'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat26'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat27'] = 0.1 * np.random.randn(dlen) + data['dat4']
+    data['dat28'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'],draw_at_once=True)
+    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
