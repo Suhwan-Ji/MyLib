@@ -4,6 +4,7 @@
 # #import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+#import matplotlib.gridspec as grid_spec
 # from matplotlib.animation import FuncAnimation
 from matplotlib.backend_bases import MouseButton
 from func_util import *
@@ -38,10 +39,21 @@ class TimeSeriesViewer():
         # Create Widgets
         ###############################################################################################################
         # Create Figure
-        self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
+        self.fig = plt.figure(figsize=(10, 6))
         self.fig.set_facecolor('grey')
-        self.pic_main = ax[0]
-        self.pic_summary = ax[1]
+
+        #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
+        figgrid = self.fig.add_gridspec(2,1,height_ratios=[10,1],left=0.05,top=0.99,bottom=0.04)#,hspace=0)width_ratios=[5,1],
+        self.pic_main = self.fig.add_subplot(figgrid[0])
+        #self.pic_boolean = self.fig.add_subplot(figgrid[1, 0])
+
+        #print(dir(self.pic_boolean))
+        #self.pic_boolean.set(shared_x=self.pic_main)
+        self.pic_summary = self.fig.add_subplot(figgrid[1])
+
+        # self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
+        # self.pic_main = ax[0]
+        # self.pic_summary = ax[1]
 
         # Create Data selector
         self.create_data_selector(self.win, [0, 1])

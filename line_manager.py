@@ -1,5 +1,4 @@
 from func_util import LimitedList
-#import matplotlib
 import matplotlib.lines
 import tkinter as tk
 from tkinter import ttk
