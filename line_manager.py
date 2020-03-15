@@ -93,8 +93,6 @@ class LineWidget(LineManager):
         LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
 
         self.data_name = data_col
-        #self.func_line_update = func_line_update
-        #self.list_position = LineWidget.init_list_poition
         self.list_scale = LineWidget.init_list_scale
 
         self.manager = tk.LabelFrame(master, text=self.data_name)
@@ -102,7 +100,6 @@ class LineWidget(LineManager):
 
         def _button_show_callback():
             self.toggle_line()
-            print(self.get_color())
             if self.get_visible():
                 self.button_show.config(background=self.get_color())
             else:
@@ -133,8 +130,6 @@ class LineWidget(LineManager):
         def _update_lineitem(item,spinbox):
             tmp = float(spinbox.get())
             self.set_lm_value(item,tmp)
-            #self.func_line_update()
-            #print('{0} is now : {1}'.format(item, self.get_lm_value(item)))
 
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
@@ -256,20 +251,18 @@ class LineContainer():
         #self._update_widget()
         #print(self.list_linewidget)
 
-
     def _update_widget(self):
         self.canvas.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox('all'),
                               yscrollcommand=self.bar.set)
 
-    # def remove_linewidget(self,data_name):
-    #     del self.list_linewidget[data_name]
-    def _update_all_ywhenx(self,x,action=None):
+    def update_all_ywhenx(self,x,action=None):
         for line in self.list_linewidget.values():
             line.update_ywhenx(x,action=action)
 
     def link_line(self, ax):
         pass
+
 
 class VerticalLine(matplotlib.lines.Line2D):
     def __init__(self, x, ax, func_line_update,y=[-1,11], **kwargs):
@@ -283,7 +276,7 @@ class VerticalLine(matplotlib.lines.Line2D):
         self.func_line_update()
 
 
-class PlotingCanvas():
+class PlottingCanvas():
     def __init__(self,master,fig, grid_pos):
         container = ttk.LabelFrame(master, text='플로터')
         container.grid(row=grid_pos[0], column=grid_pos[1], rowspan=2)
@@ -291,14 +284,11 @@ class PlotingCanvas():
         self.canvas = FigureCanvasTkAgg(fig, master=container)
         self.canvas.get_tk_widget().grid(row=0, column=0)
 
-
-        # Bind Event handling
-        # self.canvas.mpl_connect('motion_notify_event', move_callback)
-        # self.canvas.mpl_connect('button_press_event', click_callback)
-        # self.canvas.mpl_connect('scroll_event', scroll_callback)
-
     def update(self):
         self.canvas.draw()
+
+    def cbind(self, id, func):
+        self.canvas.mpl_connect(id, func)
 #
 #         time_widget = ttk.LabelFrame(container, text='시간축')
 #         time_widget.grid(row=1, column=0)
