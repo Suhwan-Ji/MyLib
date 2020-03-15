@@ -177,7 +177,7 @@ class TimeSeriesViewer():
         start = self.pic_main.start.get()
         end = start + self.pic_main.disp_step.get()
         self.pic_main.set_xlim(start, end)
-        self.pic_main.set_xticklabels(list(map(time_format_plot,self.pic_main.get_xticks())))
+        self.pic_main.set_xticklabels(list(map(time_format_plot,self.pic_main.get_xticks())),rotation=10)
 
         self.canvas.update()
 

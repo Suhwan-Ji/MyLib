@@ -301,10 +301,11 @@ class LineContainer():
     def update_all_ywhenx(self,x,action=None):
         for line in self.list_linewidget.values():
             line.update_ywhenx(x,action=action)
-        self.time_selected_left.set(f'Start : \n{time_format(line.time_selected_start)}')
-        self.time_selected_right.set(f'End : \n{time_format(line.time_selected_end)}')
-        tmp = abs(line.time_selected_end - line.time_selected_start)
-        self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
+        if len(self.list_linewidget) > 0:
+            self.time_selected_left.set(f'Start : \n{time_format(line.time_selected_start)}')
+            self.time_selected_right.set(f'End : \n{time_format(line.time_selected_end)}')
+            tmp = abs(line.time_selected_end - line.time_selected_start)
+            self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
 
     def link_line(self, ax):
         pass
