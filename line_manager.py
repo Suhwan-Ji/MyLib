@@ -216,7 +216,7 @@ class LineContainer():
     def __init__(self, master):
         self.list_linewidget = {}
         self.container = tk.LabelFrame(master, text='Lines', bd=2)
-        self.container.pack()
+        #self.container.pack()
         self.canvas = tk.Canvas(self.container, width=400, height=800)
         self.bar = tk.Scrollbar(self.container)
         self.bar["command"] = self.canvas.yview
@@ -270,14 +270,35 @@ class LineContainer():
 
     def link_line(self, ax):
         pass
-#
-# class PlotingCanvas():
-#     def __init__(self,master,fig, grid_pos):
-#         container = ttk.LabelFrame(master, text='플로터')
-#         container.grid(row=grid_pos[0], column=grid_pos[1], rowspan=2)
-#
-#         self.canvas = FigureCanvasTkAgg(fig, master=container)
-#         self.canvas.get_tk_widget().grid(row=0, column=0)
+
+class VerticalLine(matplotlib.lines.Line2D):
+    def __init__(self, x, ax, func_line_update,y=[-1,11], **kwargs):
+        matplotlib.lines.Line2D.__init__(self, [x,x], y, **kwargs)
+        ax.add_line(self)
+        self.func_line_update = func_line_update
+        self.func_line_update()
+
+    def update_xdata(self,x):
+        self.set_xdata([x,x])
+        self.func_line_update()
+
+
+class PlotingCanvas():
+    def __init__(self,master,fig, grid_pos):
+        container = ttk.LabelFrame(master, text='플로터')
+        container.grid(row=grid_pos[0], column=grid_pos[1], rowspan=2)
+
+        self.canvas = FigureCanvasTkAgg(fig, master=container)
+        self.canvas.get_tk_widget().grid(row=0, column=0)
+
+
+        # Bind Event handling
+        # self.canvas.mpl_connect('motion_notify_event', move_callback)
+        # self.canvas.mpl_connect('button_press_event', click_callback)
+        # self.canvas.mpl_connect('scroll_event', scroll_callback)
+
+    def update(self):
+        self.canvas.draw()
 #
 #         time_widget = ttk.LabelFrame(container, text='시간축')
 #         time_widget.grid(row=1, column=0)
@@ -304,13 +325,3 @@ class LineContainer():
 #         time_setter = ttk.LabelFrame(time_widget,text='setter')
 #         time_setter.grid(row=1,column=0)
 
-class VerticalLine(matplotlib.lines.Line2D):
-    def __init__(self, x, ax, func_line_update,y=[-1,11], **kwargs):
-        matplotlib.lines.Line2D.__init__(self, [x,x], y, **kwargs)
-        ax.add_line(self)
-        self.func_line_update = func_line_update
-        self.func_line_update()
-
-    def update_xdata(self,x):
-        self.set_xdata([x,x])
-        self.func_line_update()

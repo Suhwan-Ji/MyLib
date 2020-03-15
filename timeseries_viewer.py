@@ -21,8 +21,11 @@ class TimeSeriesViewer():
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
         self.win.geometry('1400x900')
-        self.win.resizable(width=False,height=False)#=False# config(resizable=False)
+        self.win.resizable(width=False,height=False)
 
+        ###############################################################################################################
+        # Init Attributes
+        ###############################################################################################################
         if data is not None:
             self.data = data
             self.datalist = data.columns[1:]
@@ -31,173 +34,186 @@ class TimeSeriesViewer():
             pass
         self.time_col = time_col
 
-        self.line_container = LineContainer(self.win)
-        self.line_container.container.grid(row=1, column=1)
-
-        self.create_data_selector([0, 1])
-
+        # Vertical lines container
+        self.main_vertical_lines = {}
+        self.sub_vertical_lines = {}
+        ###############################################################################################################
+        # Create Figure
+        ###############################################################################################################
         self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
         self.fig.set_facecolor('grey')
 
-        self.main_pic = ax[0]
-        self.main_pic.set_ylim(0, 10)
-        self.main_pic.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        self.main_pic.set_facecolor('grey')
-        self.main_pic.grid(True)
+        self.pic_main = ax[0]
+        self.pic_main.set_ylim(0, 10)
+        self.pic_main.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.pic_main.set_facecolor('grey')
+        self.pic_main.grid(True)
 
-        self.sub_pic = ax[1]
-        if main_col is not None\
-            and main_col in self.datalist:
-            self.sub_pic.plot(self.data[self.time_col],self.data[main_col])
+        self.pic_summary = ax[1]
+        if main_col is not None \
+                and main_col in self.datalist:
+            self.pic_summary.plot(self.data[self.time_col], self.data[main_col])
+
+        ###############################################################################################################
+        # Create Widgets
+        ###############################################################################################################
+
+        # Create Data selector
+        self.create_data_selector(self.win, [0, 1])
+
+        # Create LineContainer
+        self.line_container = LineContainer(self.win)
+        self.line_container.container.grid(row=1, column=1)
+
 
         self.mp_start = tk.DoubleVar(value=0)
         self.mp_disp_step = tk.DoubleVar(value=300)
         self.mp_mv_step = tk.DoubleVar(value=60)
 
-        self.main_vertical_lines = {}
-        self.sub_vertical_lines = {}
+        self.canvas = PlotingCanvas(self.win,self.fig, [0, 0])
 
-        self.create_canvas(self.win, [0, 0])
+        #self.create_canvas(self.win, [0, 0])
 
-        self.update_main_picture()
+        # self.update_main_picture()
 
         self.win.mainloop()
 
     def create_canvas(self, master, grid_pos):
-        container = ttk.LabelFrame(master, text='플로터')
-        container.grid(row=grid_pos[0], column=grid_pos[1],rowspan=2)
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=container)
-        self.canvas.get_tk_widget().grid(row=0, column=0)
-
-        time_widget = ttk.LabelFrame(container, text='시간축')
-        time_widget.grid(row=1, column=0)
-
-        def move_pic(where=None):
-            if where == 'left':
-                tmpstep = -self.mp_mv_step.get()
-            elif where == 'right':
-                tmpstep = self.mp_mv_step.get()
-            else:
-                tmpstep = 0
-            self.mp_start.set(self.mp_start.get() + tmpstep)
-            self.update_main_picture()
-
-        time_scale = ttk.LabelFrame(time_widget,text='scale')
-        time_scale.grid(row=0,column=0,columnspan=2)
-        ttk.Button(time_scale, text='<<', command=lambda: move_pic(where='left')).grid(row=0, column=0)
-        ttk.Button(time_scale, text='>>', command=lambda: move_pic(where='right')).grid(row=0, column=2)
-
-        timemax = self.data[self.time_col][len(self.data) - 1]
-        ttk.Scale(time_scale, orient=tk.HORIZONTAL, length=400, variable=self.mp_start, from_=0.0, to=timemax).grid(
-            row=0, column=1)
-
-        time_setter = ttk.LabelFrame(time_widget,text='setter')
-        time_setter.grid(row=1,column=0)
-
-
-        def set_div_time():
-            self.mp_disp_step.set(float(timestep.get()))
-            self.update_main_picture()
-        timestep = tk.StringVar(value=self.mp_disp_step.get())
-        ttk.Entry(time_setter,textvariable=timestep).grid(row=0,column=0)
-        ttk.Button(time_setter, text='한칸당 초 update',command=set_div_time).grid(row=0,column=1)
-        def set_move_time():
-            self.mp_mv_step.set(float(timestep_mv.get()))
-            self.update_main_picture()
-
-        timestep_mv = tk.StringVar(value=self.mp_mv_step.get())
-        ttk.Entry(time_setter,textvariable=timestep_mv).grid(row=1,column=0)
-        ttk.Button(time_setter, text='이동속도 update',command=set_move_time).grid(row=1,column=1)
-
-        time_result = ttk.LabelFrame(time_widget,text='result')
-        time_result.grid(row=1,column=1)
-
-        ttk.Label(time_result, text='한칸당(sec/div) : ').grid(row=1, column=0)
-        ttk.Label(time_result, textvariable=self.mp_disp_step).grid(row=1, column=1)
-        ttk.Label(time_result, text='이동속도(sec/click) : ').grid(row=2, column=0)
-        ttk.Label(time_result, textvariable=self.mp_mv_step).grid(row=2, column=1)
-
-        tmp = lambda x: self.update_main_picture()
-        self.ani = FuncAnimation(self.fig, tmp, interval=2000)
-
-        def move_callback(event):
-             x = event.xdata
-             if event.inaxes == self.main_pic:
-                 self.line_container._update_all_ywhenx(x)
-                 if event.button == MouseButton.LEFT:
-                     if 'left' not in self.main_vertical_lines.keys():
-                         self.main_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.update_main_picture,
-                                                                    linestyle='-')
-                     self.main_vertical_lines['left'].update_xdata(x)
-                     self.line_container._update_all_ywhenx(x,action='left')
-                 elif event.button == MouseButton.RIGHT:
-                     if 'right' not in self.main_vertical_lines.keys():
-                         self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
-                                                                    linestyle=':')
-                     self.main_vertical_lines['right'].update_xdata(x)
-                     self.line_container._update_all_ywhenx(x, action='right')
-             elif event.inaxes == self.sub_pic:
-                 if event.button == MouseButton.LEFT:
-                     if 'left' not in self.sub_vertical_lines.keys():
-                         self.sub_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.canvas.draw,
-                                                                         linestyle='-',color='green')
-                         self.sub_vertical_lines['right'] = VerticalLine(x+self.mp_disp_step.get(), self.canvas.draw,
-                                                                         self.update_main_picture,
-                                                                        linestyle=':', color='green')
-                     self.sub_vertical_lines['left'].update_xdata(x)
-                     self.sub_vertical_lines['right'].update_xdata(x+self.mp_disp_step.get())
-                     self.mp_start.set(event.xdata)
-                     self.update_main_picture()
-
-        def click_callback(event):
-            x = event.xdata
-            if event.inaxes == self.main_pic:
-                if event.button == MouseButton.LEFT:
-                    if 'left' not in self.main_vertical_lines.keys():
-                        self.main_vertical_lines['left'] = VerticalLine(x,self.main_pic,self.update_main_picture,
-                                                                   linestyle='-')
-                    self.main_vertical_lines['left'].update_xdata(x)
-                    self.line_container._update_all_ywhenx(x,action='left')
-                elif event.button == MouseButton.RIGHT:
-                    if 'right' not in self.main_vertical_lines.keys():
-                        self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
-                                                                    linestyle=':')
-                    self.main_vertical_lines['right'].update_xdata(x)
-                    self.line_container._update_all_ywhenx(x, action='right')
-            elif event.inaxes == self.sub_pic:
-                if 'left' not in self.sub_vertical_lines.keys():
-                    self.sub_vertical_lines['left'] = VerticalLine(x, self.sub_pic, self.canvas.draw,
-                                                                   y=[-10000,10000],
-                                                                   linestyle='-', color='black')
-                    self.sub_vertical_lines['right'] = VerticalLine(x + self.mp_disp_step.get(), self.sub_pic,
-                                                                    self.canvas.draw,
-                                                                    y=[-10000, 10000],
-                                                                    linestyle=':', color='black')
-                self.sub_vertical_lines['left'].update_xdata(x)
-                self.sub_vertical_lines['right'].update_xdata(x + self.mp_disp_step.get())
-                self.mp_start.set(event.xdata)
-                self.update_main_picture()
-
-        def scroll_callback(event):
-            if event.inaxes == self.sub_pic:
-                if event.button == 'up':
-                    tmp = self.mp_disp_step.get()
-                    self.mp_disp_step.set(tmp*1.5)
-                elif event.button == 'down':
-                    tmp = self.mp_disp_step.get()
-                    self.mp_disp_step.set(tmp / 1.5)
-                tmp = self.mp_start.get()
-                self.sub_vertical_lines['left'].update_xdata(tmp)
-                self.sub_vertical_lines['right'].update_xdata(tmp + self.mp_disp_step.get())
-                self.update_main_picture()
-
-        # motion_notify_event scroll_event button_press_event draw_event
-        self.canvas.mpl_connect('motion_notify_event', move_callback)
-        self.canvas.mpl_connect('button_press_event', click_callback)
-        self.canvas.mpl_connect('scroll_event', scroll_callback)
-    def create_data_selector(self,grid_pos):#,draw_at_once=False):
-        container = ttk.LabelFrame(self.win, text='데이터 리스트')
+        pass
+        # container = ttk.LabelFrame(master, text='플로터')
+        # container.grid(row=grid_pos[0], column=grid_pos[1],rowspan=2)
+        #
+        # self.canvas = FigureCanvasTkAgg(self.fig, master=container)
+        # self.canvas.get_tk_widget().grid(row=0, column=0)
+        #
+        # time_widget = ttk.LabelFrame(container, text='시간축')
+        # time_widget.grid(row=1, column=0)
+        #
+        # def move_pic(where=None):
+        #     if where == 'left':
+        #         tmpstep = -self.mp_mv_step.get()
+        #     elif where == 'right':
+        #         tmpstep = self.mp_mv_step.get()
+        #     else:
+        #         tmpstep = 0
+        #     self.mp_start.set(self.mp_start.get() + tmpstep)
+        #     self.update_main_picture()
+        #
+        # time_scale = ttk.LabelFrame(time_widget,text='scale')
+        # time_scale.grid(row=0,column=0,columnspan=2)
+        # ttk.Button(time_scale, text='<<', command=lambda: move_pic(where='left')).grid(row=0, column=0)
+        # ttk.Button(time_scale, text='>>', command=lambda: move_pic(where='right')).grid(row=0, column=2)
+        #
+        # timemax = self.data[self.time_col][len(self.data) - 1]
+        # ttk.Scale(time_scale, orient=tk.HORIZONTAL, length=400, variable=self.mp_start, from_=0.0, to=timemax).grid(
+        #     row=0, column=1)
+        #
+        # time_setter = ttk.LabelFrame(time_widget,text='setter')
+        # time_setter.grid(row=1,column=0)
+        #
+        #
+        # def set_div_time():
+        #     self.mp_disp_step.set(float(timestep.get()))
+        #     self.update_main_picture()
+        # timestep = tk.StringVar(value=self.mp_disp_step.get())
+        # ttk.Entry(time_setter,textvariable=timestep).grid(row=0,column=0)
+        # ttk.Button(time_setter, text='한칸당 초 update',command=set_div_time).grid(row=0,column=1)
+        # def set_move_time():
+        #     self.mp_mv_step.set(float(timestep_mv.get()))
+        #     self.update_main_picture()
+        #
+        # timestep_mv = tk.StringVar(value=self.mp_mv_step.get())
+        # ttk.Entry(time_setter,textvariable=timestep_mv).grid(row=1,column=0)
+        # ttk.Button(time_setter, text='이동속도 update',command=set_move_time).grid(row=1,column=1)
+        #
+        # time_result = ttk.LabelFrame(time_widget,text='result')
+        # time_result.grid(row=1,column=1)
+        #
+        # ttk.Label(time_result, text='한칸당(sec/div) : ').grid(row=1, column=0)
+        # ttk.Label(time_result, textvariable=self.mp_disp_step).grid(row=1, column=1)
+        # ttk.Label(time_result, text='이동속도(sec/click) : ').grid(row=2, column=0)
+        # ttk.Label(time_result, textvariable=self.mp_mv_step).grid(row=2, column=1)
+        #
+        # tmp = lambda x: self.update_main_picture()
+        # self.ani = FuncAnimation(self.fig, tmp, interval=2000)
+        #
+        # def move_callback(event):
+        #      x = event.xdata
+        #      if event.inaxes == self.main_pic:
+        #          self.line_container._update_all_ywhenx(x)
+        #          if event.button == MouseButton.LEFT:
+        #              if 'left' not in self.main_vertical_lines.keys():
+        #                  self.main_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+        #                                                             linestyle='-')
+        #              self.main_vertical_lines['left'].update_xdata(x)
+        #              self.line_container._update_all_ywhenx(x,action='left')
+        #          elif event.button == MouseButton.RIGHT:
+        #              if 'right' not in self.main_vertical_lines.keys():
+        #                  self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+        #                                                             linestyle=':')
+        #              self.main_vertical_lines['right'].update_xdata(x)
+        #              self.line_container._update_all_ywhenx(x, action='right')
+        #      elif event.inaxes == self.sub_pic:
+        #          if event.button == MouseButton.LEFT:
+        #              if 'left' not in self.sub_vertical_lines.keys():
+        #                  self.sub_vertical_lines['left'] = VerticalLine(x, self.main_pic, self.canvas.draw,
+        #                                                                  linestyle='-',color='green')
+        #                  self.sub_vertical_lines['right'] = VerticalLine(x+self.mp_disp_step.get(), self.canvas.draw,
+        #                                                                  self.update_main_picture,
+        #                                                                 linestyle=':', color='green')
+        #              self.sub_vertical_lines['left'].update_xdata(x)
+        #              self.sub_vertical_lines['right'].update_xdata(x+self.mp_disp_step.get())
+        #              self.mp_start.set(event.xdata)
+        #              self.update_main_picture()
+        #
+        # def click_callback(event):
+        #     x = event.xdata
+        #     if event.inaxes == self.main_pic:
+        #         if event.button == MouseButton.LEFT:
+        #             if 'left' not in self.main_vertical_lines.keys():
+        #                 self.main_vertical_lines['left'] = VerticalLine(x,self.main_pic,self.update_main_picture,
+        #                                                            linestyle='-')
+        #             self.main_vertical_lines['left'].update_xdata(x)
+        #             self.line_container._update_all_ywhenx(x,action='left')
+        #         elif event.button == MouseButton.RIGHT:
+        #             if 'right' not in self.main_vertical_lines.keys():
+        #                 self.main_vertical_lines['right'] = VerticalLine(x, self.main_pic, self.update_main_picture,
+        #                                                             linestyle=':')
+        #             self.main_vertical_lines['right'].update_xdata(x)
+        #             self.line_container._update_all_ywhenx(x, action='right')
+        #     elif event.inaxes == self.sub_pic:
+        #         if 'left' not in self.sub_vertical_lines.keys():
+        #             self.sub_vertical_lines['left'] = VerticalLine(x, self.sub_pic, self.canvas.draw,
+        #                                                            y=[-10000,10000],
+        #                                                            linestyle='-', color='black')
+        #             self.sub_vertical_lines['right'] = VerticalLine(x + self.mp_disp_step.get(), self.sub_pic,
+        #                                                             self.canvas.draw,
+        #                                                             y=[-10000, 10000],
+        #                                                             linestyle=':', color='black')
+        #         self.sub_vertical_lines['left'].update_xdata(x)
+        #         self.sub_vertical_lines['right'].update_xdata(x + self.mp_disp_step.get())
+        #         self.mp_start.set(event.xdata)
+        #         self.update_main_picture()
+        #
+        # def scroll_callback(event):
+        #     if event.inaxes == self.sub_pic:
+        #         if event.button == 'up':
+        #             tmp = self.mp_disp_step.get()
+        #             self.mp_disp_step.set(tmp*1.5)
+        #         elif event.button == 'down':
+        #             tmp = self.mp_disp_step.get()
+        #             self.mp_disp_step.set(tmp / 1.5)
+        #         tmp = self.mp_start.get()
+        #         self.sub_vertical_lines['left'].update_xdata(tmp)
+        #         self.sub_vertical_lines['right'].update_xdata(tmp + self.mp_disp_step.get())
+        #         self.update_main_picture()
+        #
+        # # motion_notify_event scroll_event button_press_event draw_event
+        # self.canvas.mpl_connect('motion_notify_event', move_callback)
+        # self.canvas.mpl_connect('button_press_event', click_callback)
+        # self.canvas.mpl_connect('scroll_event', scroll_callback)
+    def create_data_selector(self,master, grid_pos):#,draw_at_once=False):
+        container = ttk.LabelFrame(master, text='데이터 리스트')
         container.grid(row=grid_pos[0], column=grid_pos[1])
 
         choosers = ttk.LabelFrame(container, text='선택스')
@@ -206,17 +222,18 @@ class TimeSeriesViewer():
         dselected = tk.StringVar(value=self.datalist[0])
         ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0)
         ttk.Button(choosers, text='Add',
-                   command=lambda: self.add_col(self.main_pic, dselected.get())).grid(row=0, column=1)
+                   command=lambda: self.add_col(self.pic_main, dselected.get())).grid(row=0, column=1)
 
         # if draw_at_once:
         #     for i, dat in enumerate(self.datalist):
         #         self.add_col(dat)
 
     def update_main_picture(self):
-        start = self.mp_start.get()
-        end = start + self.mp_disp_step.get()
-        self.main_pic.set_xlim(start, end)
-        self.canvas.draw()
+        pass
+        # start = self.mp_start.get()
+        # end = start + self.mp_disp_step.get()
+        # self.main_pic.set_xlim(start, end)
+        # self.canvas.draw()
 
     def update_plot(self):
         pass
@@ -231,7 +248,7 @@ class TimeSeriesViewer():
 
 
     def add_col(self,ax,col, **kwargs):
-        self.line_container.add_linewidget(ax, self.data, col, self.canvas.draw, time_col=self.time_col, **kwargs)
+        self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col, **kwargs)
         # if tmpline is not None:
         #     self.main_pic.add_line(tmpline)
         # self.canvas.draw()
