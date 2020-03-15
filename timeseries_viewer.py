@@ -18,8 +18,8 @@ class TimeSeriesViewer():
     def __init__(self, data=None, time_col='time', main_col=None, predraw_col=None, draw_at_once=False):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
-        self.win.geometry('1400x900')
-        self.win.resizable(width=False,height=False)
+        self.win.minsize(width=1400,height=900)
+        #self.win.resizable(width=False,height=False)
 
         ###############################################################################################################
         # Init Attributes
@@ -62,7 +62,7 @@ class TimeSeriesViewer():
 
         self._initial_draw(predraw_col=predraw_col, draw_at_once=draw_at_once)
 
-
+        #self.win.focus_set(True)
         self.win.mainloop()
 
     def _init_pic_main(self):
@@ -177,6 +177,8 @@ class TimeSeriesViewer():
         start = self.pic_main.start.get()
         end = start + self.pic_main.disp_step.get()
         self.pic_main.set_xlim(start, end)
+        self.pic_main.set_xticklabels(list(map(time_format_plot,self.pic_main.get_xticks())))
+
         self.canvas.update()
 
     def add_col(self,ax,col):

@@ -10,8 +10,16 @@ import numpy as np
 def time_format(x):
     hour, rest = np.divmod(x, 3600)
     minute, second = np.divmod(rest, 60)
-    #second, rest = np.divmod(rest, 100)
+    # second, rest = np.divmod(rest, 100)
     return f"{int(hour)}시간 {int(minute)}분\n{second:.3f}초"
+
+def time_format_plot(x):
+    hour, rest = np.divmod(x, 3600)
+    minute, rest = np.divmod(rest, 60)
+    second = rest // 1
+    rest = rest % 1 * 1000
+    return f"{int(hour):02d}:{int(minute):02d}:{int(second):02d}:{int(rest):02d}"
+
 
 class LineManager(matplotlib.lines.Line2D):
     def __init__(self, x, y, func_line_update, offset=0, gain=1, position=0, scale=1, **kwargs):
@@ -97,8 +105,8 @@ class LineWidget(LineManager):
     init_data['time'] = np.arange(300)
     init_data['var'] = np.random.randn(300)
 
-    #init_list_poition = [x * 0.1 for x in range(100)]
-    init_list_scale = [0.1, 0.2, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000]#2 ** x for x in np.arange(-10, 10, 1, dtype=float)]
+    # init_list_poition = [x * 0.1 for x in range(100)]
+    init_list_scale = [0.1, 0.2, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000]
 
     def __init__(self, master, func_line_update, data_col='var', time_col='time', data=None, **kwargs):
         if data is None:
@@ -124,7 +132,6 @@ class LineWidget(LineManager):
 
 
         def _button_apply_callback():
-            print(self.entry1.instate(['readonly']))
             if self.entry1.instate(['readonly']):
                 self.entry1.state(['!readonly'])
                 self.entry2.state(['!readonly'])
@@ -235,7 +242,7 @@ class LineContainer():
         self.widget_container = tk.LabelFrame(self.container, text='Widgets', bd=2)
         self.widget_container.grid(row=1,columnspan=3)
 
-        self.canvas = tk.Canvas(self.widget_container, width=300, height=800)
+        self.canvas = tk.Canvas(self.widget_container, width=300, height=600)
         self.bar = tk.Scrollbar(self.widget_container)
         self.bar["command"] = self.canvas.yview
         self.canvas.pack(side='left')  # fill='both', expand=True, side='left')
@@ -273,18 +280,11 @@ class LineContainer():
 
             tmp = LineWidget(self.dframe, func_line_update, data_col=data_name, time_col=time_col, data=data,
                              color=color,**kwargs)
-            # delbutton = ttk.Button(self.dframe,text='del',command=lambda:self.remove_linewidget(data_name),width=5)
-            # delbutton.grid(row=0,column=1)
-            # tmp = {'linewidget':tmp, 'delbutton':delbutton}
 
             self.list_linewidget[data_name] = tmp
             ax.add_line(tmp)
             self._update_widget()
             func_line_update()
-            # print(self.list_linewidget)
-            #return tmp
-
-        #return None
 
     def remove_linewidget(self,col):
         self.list_linewidget[col]['linewidget'].remove_self()
@@ -331,7 +331,7 @@ class PlottingCanvas():
         self.canvas.get_tk_widget().grid(row=0, column=0)
 
     def update(self):
-        self.canvas.draw()
+        self.canvas.draw_idle()
 
     def cbind(self, id, func):
         self.canvas.mpl_connect(id, func)
