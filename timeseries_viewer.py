@@ -218,4 +218,4 @@ if __name__ == '__main__':
     data['dat27'] = 0.1 * np.random.randn(dlen) + data['dat4']
     data['dat28'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer()#data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
+    a = TimeSeriesViewer(data)#data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)

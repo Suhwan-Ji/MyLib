@@ -95,10 +95,6 @@ class LineManager(matplotlib.lines.Line2D):
     def set_style(self):
         pass
 
-    def destroy(self):
-        self.remove()
-        pass
-
 
 class LineWidget(LineManager):
     init_data = pd.DataFrame()
@@ -108,7 +104,7 @@ class LineWidget(LineManager):
     # init_list_poition = [x * 0.1 for x in range(100)]
     init_list_scale = [0.1, 0.2, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000]
 
-    def __init__(self, master, func_line_update, data_col='var', time_col='time', data=None, **kwargs):
+    def __init__(self, master, func_line_update, func_destroy, data_col='var', time_col='time', data=None, **kwargs):
         if data is None:
             data = LineWidget.init_data
         LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
@@ -116,7 +112,9 @@ class LineWidget(LineManager):
         self.data_name = data_col
         self.list_scale = LineWidget.init_list_scale
 
-        self.manager = tk.LabelFrame(master, text=self.data_name)
+        self.func_destroy = lambda:func_destroy(self.data_name)
+
+        self.manager = tk.LabelFrame(master, text=self.data_name)#, labelanchor='w')
         self.manager.pack()
 
         def _button_show_callback():
@@ -126,7 +124,7 @@ class LineWidget(LineManager):
             else:
                 self.button_show.config(background='grey')
 
-        self.button_show = tk.Button(self.manager, text='show', width=7, bg=self.get_color())
+        self.button_show = tk.Button(self.manager, text='show', width=6, bg=self.get_color())
         self.button_show.config(command=_button_show_callback)
         self.button_show.grid(row=0, column=0)
 
@@ -135,15 +133,15 @@ class LineWidget(LineManager):
             if self.entry1.instate(['readonly']):
                 self.entry1.state(['!readonly'])
                 self.entry2.state(['!readonly'])
-                self.button_apply.config(text='apply >>')
+                self.button_apply.config(text='apply >')
             elif self.entry1.instate(['!readonly']):
                 self.entry1.state(['readonly'])
                 self.entry2.state(['readonly'])
                 self.set_lm_value('gain',float(self.entry1.get()))
                 self.set_lm_value('offset', float(self.entry2.get()))
-                self.button_apply.config(text='modify >>')
+                self.button_apply.config(text='modify >')
 
-        self.button_apply = tk.Button(self.manager, text='modify >>', width=7)
+        self.button_apply = tk.Button(self.manager, text='modify >', width=6)
         self.button_apply.config(command=_button_apply_callback)
         self.button_apply.grid(row=1, column=0)
 
@@ -182,16 +180,18 @@ class LineWidget(LineManager):
         self.entry2.state(['readonly'])
 
         self.display_frame = ttk.LabelFrame(self.manager)
-        self.display_frame.grid(row=0,column=4, rowspan=2)
+        self.display_frame.grid(row=0,column=4, rowspan=2,sticky=tk.N+tk.S)
         # self.current_yvalue = tk.StringVar(value="cur : ")
         # tk.Label(self.display_frame,textvariable=self.current_yvalue,
         #          width=15, anchor='w').grid(row=0,column=0)
         self.left_yvalue = tk.StringVar(value="left : ")
         tk.Label(self.display_frame, textvariable=self.left_yvalue,
-                 width=15, anchor='w').grid(row=0, column=0,sticky=tk.W) # justify=tk.LEFT
+                 width=12, anchor='w').grid(row=0, column=0,sticky=tk.W) # justify=tk.LEFT
         self.right_yvalue = tk.StringVar(value="right : ")
         tk.Label(self.display_frame, textvariable=self.right_yvalue,
-                 width=15, anchor='w').grid(row=1, column=0,sticky=tk.W)
+                 width=12, anchor='w').grid(row=1, column=0,sticky=tk.W)
+
+        ttk.Button(self.manager, text='del',command=self.func_destroy,width=3).grid(row=0,column=5)
 
     def update_ywhenx(self,x,action=None):
         if action=='left':
@@ -202,8 +202,6 @@ class LineWidget(LineManager):
             self.time_selected_end = x
         # else:
         #     self.current_yvalue.set(f'cur : {self.get_rawy_whenx(x):.3f}')
-
-
 
     def remove_self(self):
         pass
@@ -245,8 +243,12 @@ class LineContainer():
         self.canvas = tk.Canvas(self.widget_container, width=300, height=600)
         self.bar = tk.Scrollbar(self.widget_container)
         self.bar["command"] = self.canvas.yview
-        self.canvas.pack(side='left')  # fill='both', expand=True, side='left')
-        self.bar.pack(fill='y', side='right')
+        self.bar_H = tk.Scrollbar(self.widget_container,orient=tk.HORIZONTAL)
+        self.bar_H["command"] = self.canvas.xview
+
+        self.canvas.grid(row=0,column=0)#pack(side='left')  # fill='both', expand=True, side='left')
+        self.bar.grid(row=0,column=1,sticky=tk.N+tk.S)#.pack(fill='y', side='right')
+        self.bar_H.grid(row=1,column=0,columnspan=2,sticky=tk.W+tk.E)#pack(fill='y', side='bottom')
 
         self.dframe = tk.Frame(self.canvas)
 
@@ -257,7 +259,6 @@ class LineContainer():
         self.time_selected_left = tk.StringVar(value='Start : \n\n')
         self.time_selected_right = tk.StringVar(value='End : \n\n')
         self.time_selected_delta = tk.StringVar(value='Delata : \n\n')
-
         ttk.Label(master,textvariable=self.time_selected_left,
                   width=12, anchor='w').grid(row=0, column=0)
         ttk.Label(master, textvariable=self.time_selected_right,
@@ -265,20 +266,14 @@ class LineContainer():
         ttk.Label(master, textvariable=self.time_selected_delta,
                   width=12, anchor='w').grid(row=0, column=2)
 
-        # tk.Label(container,textvariable= self.)
-        # if action=='left':
-        #     self.left_yvalue.set(f'left : {self.get_rawy_whenx(x,which="modified"):.3f}')
-        # elif action=='right':
-        #     self.right_yvalue.set(f'right : {self.get_rawy_whenx(x,which="modified"):.3f}')
-        #
-
     def add_linewidget(self, ax, data, data_name, func_line_update, time_col='time', **kwargs):
         if data_name not in self.list_linewidget.keys():
             tmplen = len(LineContainer.list_color)
             orderlen = len(self.list_linewidget)%tmplen
             color = LineContainer.list_color[orderlen]
 
-            tmp = LineWidget(self.dframe, func_line_update, data_col=data_name, time_col=time_col, data=data,
+            tmp = LineWidget(self.dframe, func_line_update, self.remove_linewidget,
+                             data_col=data_name, time_col=time_col, data=data,
                              color=color,**kwargs)
 
             self.list_linewidget[data_name] = tmp
@@ -287,16 +282,18 @@ class LineContainer():
             func_line_update()
 
     def remove_linewidget(self,col):
-        self.list_linewidget[col]['linewidget'].remove_self()
-        self.list_linewidget[col]['delbutton'].destroy()
-        del self.list_linewidget[col]
-        #self._update_widget()
+        if col in self.list_linewidget.keys():
+            self.list_linewidget[col].remove()
+            self.list_linewidget[col].manager.destroy()
+            del self.list_linewidget[col]
+        self._update_widget()
         #print(self.list_linewidget)
 
     def _update_widget(self):
         self.canvas.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox('all'),
-                              yscrollcommand=self.bar.set)
+                              yscrollcommand=self.bar.set,
+                              xscrollcommand=self.bar_H.set)
 
     def update_all_ywhenx(self,x,action=None):
         for line in self.list_linewidget.values():
@@ -307,8 +304,8 @@ class LineContainer():
             tmp = abs(line.time_selected_end - line.time_selected_start)
             self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
 
-    def link_line(self, ax):
-        pass
+    def __del__(self):
+        print('LineContainer has been deleted')
 
 
 class VerticalLine(matplotlib.lines.Line2D):
@@ -321,6 +318,9 @@ class VerticalLine(matplotlib.lines.Line2D):
     def update_xdata(self,x):
         self.set_xdata([x,x])
         self.func_line_update()
+
+    def __del__(self):
+        print('VerticalLine has been deleted')
 
 
 class PlottingCanvas():
@@ -336,6 +336,9 @@ class PlottingCanvas():
 
     def cbind(self, id, func):
         self.canvas.mpl_connect(id, func)
+
+    def __del__(self):
+        print('PlottingCanvas has been deleted')
 #
 #         time_widget = ttk.LabelFrame(container, text='시간축')
 #         time_widget.grid(row=1, column=0)
