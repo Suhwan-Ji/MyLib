@@ -29,7 +29,9 @@ class TimeSeriesViewer():
             self.datalist = data.columns[1:]
         else:
             # Launch Data Reader
-            pass
+            print('Data 없이 런칭하기는 구현 안됨')
+            self.win.destroy()
+            return
         self.time_col = time_col
 
         ###############################################################################################################
@@ -96,17 +98,12 @@ class TimeSeriesViewer():
             for i, col in enumerate(self.datalist):
                 self.add_col(self.pic_main, col)
         elif predraw_col is not None:
-            print(predraw_col)
             if not isiter(predraw_col):
-                print('not iter')
                 dlist = [predraw_col]
             else:
-                print('iter')
                 dlist = predraw_col
             for col in dlist:
-                print(col)
                 if col in self.datalist:
-                    print('add')
                     self.add_col(self.pic_main, col)
 
     def _bind_canvas_events(self):
@@ -221,4 +218,4 @@ if __name__ == '__main__':
     data['dat27'] = 0.1 * np.random.randn(dlen) + data['dat4']
     data['dat28'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
+    a = TimeSeriesViewer()#data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)

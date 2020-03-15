@@ -361,4 +361,3 @@ class PlottingCanvas():
 #
 #         time_setter = ttk.LabelFrame(time_widget,text='setter')
 #         time_setter.grid(row=1,column=0)
-
