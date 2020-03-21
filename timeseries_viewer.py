@@ -49,10 +49,7 @@ class TimeSeriesViewer():
         self.pic_main.x_right = 0
         self.pic_main.x_reference = 0
         self.pic_main.x_now = 0
-        #self.pic_boolean = self.fig.add_subplot(figgrid[1, 0])
 
-        #print(dir(self.pic_boolean))
-        #self.pic_boolean.set(shared_x=self.pic_main)
         self.pic_summary = self.fig.add_subplot(figgrid[1])
         self.pic_summary.x_left = 0
         self.pic_summary.x_right = 0
@@ -94,7 +91,6 @@ class TimeSeriesViewer():
         self.pic_main.start = tk.DoubleVar(value=0)
         self.pic_main.start_reference = tk.DoubleVar(value=0)
         self.pic_main.disp_step = tk.DoubleVar(value=30)
-        #self.pic_main.move_step = tk.DoubleVar(value=10)
         # Vertical lines container
         self.pic_main.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_main, self.canvas.update,
                                                         linestyle='-',color='darkblue'),
@@ -139,21 +135,16 @@ class TimeSeriesViewer():
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = pic.x_now
-                pic.verticals['left'].update_xdata(pic.x_left)
-                self.line_container.update_all_ywhenx(pic.x_left,action='left')
+                self.line_container.update_selected(pic.x_left,action='left')
             elif event.button == MouseButton.RIGHT:
                 pic.x_right = pic.x_now
-                pic.verticals['right'].update_xdata(pic.x_right)
-                self.line_container.update_all_ywhenx(pic.x_right, action='right')
+                self.line_container.update_selected(pic.x_right, action='right')
         elif pic == self.pic_summary:
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = self.pic_summary.x_now
-                pic.verticals['left'].update_xdata(pic.x_left)
-                pic.verticals['right'].update_xdata(pic.x_left
-                                                    +self.pic_main.disp_step.get())
                 self.pic_main.start.set(pic.x_left)
-        self.update_main_picture()
+        self.update_pictures()
 
     def _canvas_cb_click(self, event):
         pic = event.inaxes
@@ -161,12 +152,10 @@ class TimeSeriesViewer():
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = pic.x_now
-                pic.verticals['left'].update_xdata(pic.x_left)
-                self.line_container.update_all_ywhenx(pic.x_left,action='left')
+                self.line_container.update_selected(pic.x_left,action='left')
             elif event.button == MouseButton.RIGHT:
                 pic.x_right = pic.x_now
-                pic.verticals['right'].update_xdata(pic.x_right)
-                self.line_container.update_all_ywhenx(pic.x_right, action='right')
+                self.line_container.update_selected(pic.x_right, action='right')
             elif event.button == MouseButton.MIDDLE:
                 pic.x_reference = pic.x_now  # 드래그 시작위치
                 pic.start_reference.set(pic.start.get())
@@ -175,23 +164,18 @@ class TimeSeriesViewer():
             self.pic_summary.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = pic.x_now
-                pic.verticals['left'].update_xdata(pic.x_left)
-                pic.verticals['right'].update_xdata(pic.x_left
-                                                    + self.pic_main.disp_step.get())
                 self.pic_main.start.set(pic.x_left)
-        self.update_main_picture()
+        self.update_pictures()
 
     def _canvas_cb_release(self, event):
         pic = event.inaxes
         if pic == self.pic_main:
-            pic.x_now = event.xdata
-            deltax = pic.x_now - pic.x_reference
-            start = self.pic_main.start_reference.get() - deltax
-
-            self.pic_main.start.set(start)
-            self.pic_summary.verticals['left'].update_xdata(start)
-            self.pic_summary.verticals['right'].update_xdata(start
-                                                         + self.pic_main.disp_step.get())
+            if event.button == MouseButton.MIDDLE:
+                pic.x_now = event.xdata
+                deltax = pic.x_now - pic.x_reference
+                start = self.pic_main.start_reference.get() - deltax
+                self.pic_main.start.set(start)
+        self.update_pictures()
 
     def _canvas_cb_scroll(self, event):
         tmp = self.pic_main.disp_step.get()
@@ -199,10 +183,7 @@ class TimeSeriesViewer():
             self.pic_main.disp_step.set(tmp*1.5)
         elif event.button == 'down':
             self.pic_main.disp_step.set(tmp / 1.5)
-        tmp = self.pic_main.start.get()
-        self.pic_summary.verticals['left'].update_xdata(tmp)
-        self.pic_summary.verticals['right'].update_xdata(tmp + self.pic_main.disp_step.get())
-        self.update_main_picture()
+        self.update_pictures()
 
     def create_data_selector(self,master, grid_pos):
         container = ttk.LabelFrame(master, text='데이터 리스트')
@@ -216,15 +197,27 @@ class TimeSeriesViewer():
         ttk.Button(choosers, text='Add',
                    command=lambda: self.add_col(self.pic_main, dselected.get())).grid(row=0, column=1)
 
+    def update_pictures(self):
+        self.update_main_picture()
+        self.update_summary_picture()
+
     def update_main_picture(self):
         start = self.pic_main.start.get()
         end = start + self.pic_main.disp_step.get()
         self.pic_main.set_xlim(start, end)
         self.pic_main.set_xticklabels(list(map(time_format_plot,self.pic_main.get_xticks())),rotation=10)
 
+        self.pic_main.verticals['left'].update_xdata(self.pic_main.x_left)
+        self.pic_main.verticals['right'].update_xdata(self.pic_main.x_right)
+
         self.canvas.update()
 
-    def add_col(self,ax,col):
+    def update_summary_picture(self):
+        self.pic_summary.verticals['left'].update_xdata(self.pic_main.start.get())
+        self.pic_summary.verticals['right'].update_xdata(self.pic_main.start.get()
+                                                         + self.pic_main.disp_step.get())
+
+    def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
                                            alpha=0.5, drawstyle='steps-post')#marker='o',markersize=1,
 
@@ -241,4 +234,4 @@ if __name__ == '__main__':
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data)#data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
+    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)

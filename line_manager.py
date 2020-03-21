@@ -32,12 +32,12 @@ class LineManager(matplotlib.lines.Line2D):
         self.position = position
         self.scale = scale
 
-        self.time_selected_start = 0
-        self.time_selected_end = 0
+        self.x_selected_left = 0
+        self.x_selected_right = 0
 
         self._update_line()
 
-    def get_rawy_whenx(self,x,which='raw'):
+    def get_value_whenx(self,x,which='raw'):
         index = np.argmin(np.array(self.get_xdata()) < x) - 1
         try:
             if which == 'modified':
@@ -46,6 +46,18 @@ class LineManager(matplotlib.lines.Line2D):
                 return self.raw_ydata[index]
         except:
             return 0
+
+    #     print(get_data_selected(which))
+    #
+    # def get_data_selected(self,which='raw'):
+    #     start = np.minimum(self.x_selected_left,self.x_selected_right)
+    #     end = np.maximum(self.x_selected_left, self.x_selected_right)
+    #     index_start = np.argmin(np.array(self.get_xdata()) < start) - 1
+    #     index_end = np.argmin(np.array(self.get_xdata()) < end) - 1
+    #     if which == 'modified':
+    #         return self.modified_ydata[index_start:index_end]
+    #     else:
+    #         return self.raw_ydata[index_start:index_end]
 
     def _update_modified_line(self):
         # 유저가 세팅한 값 계산
@@ -91,9 +103,12 @@ class LineManager(matplotlib.lines.Line2D):
         self.set_visible(not tmp)
         self.func_line_update()
 
-    def set_style(self):
-        pass
-
+    # def set_style(self,**kwargs):
+    #     if 'drawstyle' in kwargs:
+    #         self.set_drawstyle(kwargs['drawstyle'])
+    #     if 'color' in kwargs:
+    #         self.set_color(kwargs['color'])
+    #
 
 class LineWidget(LineManager):
     init_data = pd.DataFrame()
@@ -192,13 +207,13 @@ class LineWidget(LineManager):
 
         ttk.Button(self.manager, text='del',command=self.func_destroy,width=3).grid(row=0,column=5)
 
-    def update_ywhenx(self,x,action=None):
+    def update_selected_x(self,x,action=None):
         if action=='left':
-            self.left_yvalue.set(f'left : {self.get_rawy_whenx(x,which="modified"):.3f}')
-            self.time_selected_start = x
+            self.left_yvalue.set(f'left : {self.get_value_whenx(x,which="modified"):.3f}')
+            self.x_selected_left = x
         elif action=='right':
-            self.right_yvalue.set(f'right : {self.get_rawy_whenx(x,which="modified"):.3f}')
-            self.time_selected_end = x
+            self.right_yvalue.set(f'right : {self.get_value_whenx(x,which="modified"):.3f}')
+            self.x_selected_right = x
         # else:
         #     self.current_yvalue.set(f'cur : {self.get_rawy_whenx(x):.3f}')
 
@@ -294,13 +309,13 @@ class LineContainer():
                               yscrollcommand=self.bar.set,
                               xscrollcommand=self.bar_H.set)
 
-    def update_all_ywhenx(self,x,action=None):
+    def update_selected(self,x,action=None):
         for line in self.list_linewidget.values():
-            line.update_ywhenx(x,action=action)
+            line.update_selected_x(x,action=action)
         if len(self.list_linewidget) > 0:
-            self.time_selected_left.set(f'Start : \n{time_format(line.time_selected_start)}')
-            self.time_selected_right.set(f'End : \n{time_format(line.time_selected_end)}')
-            tmp = abs(line.time_selected_end - line.time_selected_start)
+            self.time_selected_left.set(f'Start : \n{time_format(line.x_selected_left)}')
+            self.time_selected_right.set(f'End : \n{time_format(line.x_selected_right)}')
+            tmp = abs(line.x_selected_right - line.x_selected_left)
             self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
 
     def __del__(self):
@@ -338,28 +353,3 @@ class PlottingCanvas():
 
     def __del__(self):
         print('PlottingCanvas has been deleted')
-#
-#         time_widget = ttk.LabelFrame(container, text='시간축')
-#         time_widget.grid(row=1, column=0)
-#
-#         def move_pic(where=None):
-#             if where == 'left':
-#                 tmpstep = -self.mp_mv_step.get()
-#             elif where == 'right':
-#                 tmpstep = self.mp_mv_step.get()
-#             else:
-#                 tmpstep = 0
-#             self.mp_start.set(self.mp_start.get() + tmpstep)
-#             self.update_main_picture()
-#
-#         time_scale = ttk.LabelFrame(time_widget,text='scale')
-#         time_scale.grid(row=0,column=0,columnspan=2)
-#         ttk.Button(time_scale, text='<<', command=lambda: move_pic(where='left')).grid(row=0, column=0)
-#         ttk.Button(time_scale, text='>>', command=lambda: move_pic(where='right')).grid(row=0, column=2)
-#
-#         timemax = self.data[self.time_col][len(self.data) - 1]
-#         ttk.Scale(time_scale, orient=tk.HORIZONTAL, length=400, variable=self.mp_start, from_=0.0, to=timemax).grid(
-#             row=0, column=1)
-#
-#         time_setter = ttk.LabelFrame(time_widget,text='setter')
-#         time_setter.grid(row=1,column=0)
