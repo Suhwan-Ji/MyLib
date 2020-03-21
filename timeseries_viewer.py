@@ -16,7 +16,7 @@ mpl.rcParams['agg.path.chunksize'] = 10000
 
 
 class TimeSeriesViewer():
-    def __init__(self, data=None, time_col='time', main_col=None, predraw_col=None, draw_at_once=False):
+    def __init__(self, data=None, time_col='Time', main_col=None, predraw_col=None, draw_at_once=False):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
         self.win.minsize(width=1400,height=900)
@@ -45,11 +45,18 @@ class TimeSeriesViewer():
         #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
         figgrid = self.fig.add_gridspec(2,1,height_ratios=[10,1],left=0.05,top=0.99,bottom=0.04)#,hspace=0)width_ratios=[5,1],
         self.pic_main = self.fig.add_subplot(figgrid[0])
+        self.pic_main.x_left = 0
+        self.pic_main.x_right = 0
+        self.pic_main.x_reference = 0
+        self.pic_main.x_now = 0
         #self.pic_boolean = self.fig.add_subplot(figgrid[1, 0])
 
         #print(dir(self.pic_boolean))
         #self.pic_boolean.set(shared_x=self.pic_main)
         self.pic_summary = self.fig.add_subplot(figgrid[1])
+        self.pic_summary.x_left = 0
+        self.pic_summary.x_right = 0
+        self.pic_summary.x_now = 0
 
         # self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
         # self.pic_main = ax[0]
@@ -85,8 +92,9 @@ class TimeSeriesViewer():
         self.pic_main.set_facecolor('grey')
         self.pic_main.grid(True)
         self.pic_main.start = tk.DoubleVar(value=0)
+        self.pic_main.start_reference = tk.DoubleVar(value=0)
         self.pic_main.disp_step = tk.DoubleVar(value=30)
-        self.pic_main.move_step = tk.DoubleVar(value=10)
+        #self.pic_main.move_step = tk.DoubleVar(value=10)
         # Vertical lines container
         self.pic_main.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_main, self.canvas.update,
                                                         linestyle='-',color='darkblue'),
@@ -122,44 +130,70 @@ class TimeSeriesViewer():
         # motion_notify_event scroll_event button_press_event draw_event
         self.canvas.cbind('motion_notify_event', self._canvas_cb_move)
         self.canvas.cbind('button_press_event', self._canvas_cb_click)
+        self.canvas.cbind('button_release_event', self._canvas_cb_release)
         self.canvas.cbind('scroll_event', self._canvas_cb_scroll)
 
     def _canvas_cb_move(self,event):
-        if event.inaxes == self.pic_main:
-            x = event.xdata
+        pic = event.inaxes
+        if pic == self.pic_main:
+            pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
-                self.pic_main.verticals['left'].update_xdata(x)
-                self.line_container.update_all_ywhenx(x,action='left')
+                pic.x_left = pic.x_now
+                pic.verticals['left'].update_xdata(pic.x_left)
+                self.line_container.update_all_ywhenx(pic.x_left,action='left')
             elif event.button == MouseButton.RIGHT:
-                self.pic_main.verticals['right'].update_xdata(x)
-                self.line_container.update_all_ywhenx(x, action='right')
-        elif event.inaxes == self.pic_summary:
-            x = event.xdata
+                pic.x_right = pic.x_now
+                pic.verticals['right'].update_xdata(pic.x_right)
+                self.line_container.update_all_ywhenx(pic.x_right, action='right')
+        elif pic == self.pic_summary:
+            pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
-                self.pic_summary.verticals['left'].update_xdata(x)
-                self.pic_summary.verticals['right'].update_xdata(x+self.pic_main.disp_step.get())
-                self.pic_main.start.set(event.xdata)
+                pic.x_left = self.pic_summary.x_now
+                pic.verticals['left'].update_xdata(pic.x_left)
+                pic.verticals['right'].update_xdata(pic.x_left
+                                                    +self.pic_main.disp_step.get())
+                self.pic_main.start.set(pic.x_left)
         self.update_main_picture()
 
     def _canvas_cb_click(self, event):
-        if event.inaxes == self.pic_main:
-            x = event.xdata
+        pic = event.inaxes
+        if pic == self.pic_main:
+            pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
-                self.pic_main.verticals['left'].update_xdata(x)
-                self.line_container.update_all_ywhenx(x,action='left')
+                pic.x_left = pic.x_now
+                pic.verticals['left'].update_xdata(pic.x_left)
+                self.line_container.update_all_ywhenx(pic.x_left,action='left')
             elif event.button == MouseButton.RIGHT:
-                self.pic_main.verticals['right'].update_xdata(x)
-                self.line_container.update_all_ywhenx(x, action='right')
+                pic.x_right = pic.x_now
+                pic.verticals['right'].update_xdata(pic.x_right)
+                self.line_container.update_all_ywhenx(pic.x_right, action='right')
+            elif event.button == MouseButton.MIDDLE:
+                pic.x_reference = pic.x_now  # 드래그 시작위치
+                pic.start_reference.set(pic.start.get())
+
         elif event.inaxes == self.pic_summary:
-            x = event.xdata
+            self.pic_summary.x_now = event.xdata
             if event.button == MouseButton.LEFT:
-                self.pic_summary.verticals['left'].update_xdata(x)
-                self.pic_summary.verticals['right'].update_xdata(x + self.pic_main.disp_step.get())
-                self.pic_main.start.set(x)
+                pic.x_left = pic.x_now
+                pic.verticals['left'].update_xdata(pic.x_left)
+                pic.verticals['right'].update_xdata(pic.x_left
+                                                    + self.pic_main.disp_step.get())
+                self.pic_main.start.set(pic.x_left)
         self.update_main_picture()
 
+    def _canvas_cb_release(self, event):
+        pic = event.inaxes
+        if pic == self.pic_main:
+            pic.x_now = event.xdata
+            deltax = pic.x_now - pic.x_reference
+            start = self.pic_main.start_reference.get() - deltax
+
+            self.pic_main.start.set(start)
+            self.pic_summary.verticals['left'].update_xdata(start)
+            self.pic_summary.verticals['right'].update_xdata(start
+                                                         + self.pic_main.disp_step.get())
+
     def _canvas_cb_scroll(self, event):
-        #if event.inaxes == self.pic_summary:
         tmp = self.pic_main.disp_step.get()
         if event.button == 'up':
             self.pic_main.disp_step.set(tmp*1.5)
@@ -200,34 +234,11 @@ if __name__ == '__main__':
     data = pd.DataFrame()
     dlen = 3000
     Ts = 0.1
-    data['time'] = np.arange(0, dlen * Ts, Ts)
-    data['dat1'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + data['time']
-    data['dat2'] = 2 * np.sin(2 * np.pi * 0.5 * data['time']) + 1 * np.cos(2 * np.pi * 3 * data['time'])
+    data['Time'] = np.arange(0, dlen * Ts, Ts)
+    data['dat1'] = 2 * np.sin(2 * np.pi * 0.5 * data['Time']) + data['Time']
+    data['dat2'] = 2 * np.sin(2 * np.pi * 0.5 * data['Time']) + 1 * np.cos(2 * np.pi * 3 * data['Time'])
     data['dat3'] = 0.3 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat6'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat7'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat8'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat9'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat10'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat11'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat12'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat13'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat14'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat15'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat16'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat17'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat18'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat19'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat20'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat21'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat22'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat23'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat24'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat25'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat26'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat27'] = 0.1 * np.random.randn(dlen) + data['dat4']
-    data['dat28'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
     a = TimeSeriesViewer(data)#data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
