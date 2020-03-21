@@ -327,11 +327,11 @@ class VerticalLine(matplotlib.lines.Line2D):
         matplotlib.lines.Line2D.__init__(self, [x,x], y, **kwargs)
         ax.add_line(self)
         self.func_line_update = func_line_update
-        self.func_line_update()
+        #self.func_line_update()
 
     def update_xdata(self,x):
         self.set_xdata([x,x])
-        self.func_line_update()
+        #self.func_line_update()
 
     def __del__(self):
         print('VerticalLine has been deleted')

@@ -4,7 +4,7 @@
 # #import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-#import matplotlib.gridspec as grid_spec
+import matplotlib.gridspec as grid_spec
 # from matplotlib.animation import FuncAnimation
 from matplotlib.backend_bases import MouseButton
 from func_util import *
@@ -43,13 +43,22 @@ class TimeSeriesViewer():
         self.fig.set_facecolor('grey')
 
         #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
-        figgrid = self.fig.add_gridspec(2,1,height_ratios=[10,1],left=0.05,top=0.99,bottom=0.04)#,hspace=0)width_ratios=[5,1],
-        self.pic_main = self.fig.add_subplot(figgrid[0])
+        figgrid = self.fig.add_gridspec(2,1,height_ratios=[12,1],left=0.05,top=0.99,bottom=0.04)#,hspace=0)width_ratios=[5,1],
+        self.pic_main_container = self.fig.add_subplot(figgrid[0])
+        self.pic_main_container.tick_params(axis="x", labelbottom=False)
+        self.pic_main_container.tick_params(axis="y", labelleft=False)
+        maingrid = grid_spec.GridSpecFromSubplotSpec(2,1,figgrid[0],height_ratios=[8,1],hspace=0)
+        #axesgrid = self.pic_main_container.add_grids
+        self.pic_main = self.fig.add_subplot(maingrid[0])
+        self.pic_main.tick_params(axis="x", labelbottom=False)
+        self.pic_main.tick_params(axis="y", labelleft=False)
         self.pic_main.x_left = 0
         self.pic_main.x_right = 0
         self.pic_main.x_reference = 0
         self.pic_main.x_now = 0
 
+        self.pic_boolean = self.fig.add_subplot(maingrid[1],sharex=self.pic_main)
+        self.pic_boolean.tick_params(axis="y", labelleft=False)
         self.pic_summary = self.fig.add_subplot(figgrid[1])
         self.pic_summary.x_left = 0
         self.pic_summary.x_right = 0
@@ -73,10 +82,11 @@ class TimeSeriesViewer():
         # Initialize
         ###############################################################################################################
         self._init_pic_main()
+        self._init_pic_boolean()
         self._init_pic_summary(main_col)
 
         self._bind_canvas_events()
-        self.update_main_picture()
+        self.update_pictures()
 
         self._initial_draw(predraw_col=predraw_col, draw_at_once=draw_at_once)
 
@@ -96,6 +106,16 @@ class TimeSeriesViewer():
                                                         linestyle='-',color='darkblue'),
                                    'right': VerticalLine(self.pic_main.start.get() + self.pic_main.disp_step.get(),
                                                          self.pic_main, self.canvas.update,
+                                                         linestyle=':',color='darkblue')}
+    def _init_pic_boolean(self):
+        self.pic_boolean.set_ylim(0, 5)
+        self.pic_boolean.set_yticks([0, 1, 2, 3, 4, 5])
+        self.pic_boolean.set_facecolor('grey')
+        self.pic_boolean.grid(True)
+        self.pic_boolean.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_boolean, self.canvas.update,
+                                                        linestyle='-',color='darkblue'),
+                                   'right': VerticalLine(self.pic_main.start.get() + self.pic_main.disp_step.get(),
+                                                         self.pic_boolean, self.canvas.update,
                                                          linestyle=':',color='darkblue')}
 
     def _init_pic_summary(self,main_col):
@@ -131,7 +151,9 @@ class TimeSeriesViewer():
 
     def _canvas_cb_move(self,event):
         pic = event.inaxes
-        if pic == self.pic_main:
+        if (pic == self.pic_main) \
+                or (pic == self.pic_boolean):
+            pic = self.pic_main
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = pic.x_now
@@ -148,7 +170,9 @@ class TimeSeriesViewer():
 
     def _canvas_cb_click(self, event):
         pic = event.inaxes
-        if pic == self.pic_main:
+        if (pic == self.pic_main) \
+                or (pic == self.pic_boolean):
+            pic = self.pic_main
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
                 pic.x_left = pic.x_now
@@ -169,7 +193,9 @@ class TimeSeriesViewer():
 
     def _canvas_cb_release(self, event):
         pic = event.inaxes
-        if pic == self.pic_main:
+        if (pic == self.pic_main) \
+            or (pic == self.pic_boolean):
+            pic = self.pic_main
             if event.button == MouseButton.MIDDLE:
                 pic.x_now = event.xdata
                 deltax = pic.x_now - pic.x_reference
@@ -193,15 +219,20 @@ class TimeSeriesViewer():
         choosers.pack()
 
         dselected = tk.StringVar(value=self.datalist[0])
-        ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0)
-        ttk.Button(choosers, text='Add',
+        ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0, rowspan=2)
+        ttk.Button(choosers, text='MainAdd',
                    command=lambda: self.add_col(self.pic_main, dselected.get())).grid(row=0, column=1)
+        ttk.Button(choosers, text='BoolAdd',
+                   command=lambda: self.add_col(self.pic_boolean, dselected.get())).grid(row=1, column=1)
 
     def update_pictures(self):
-        self.update_main_picture()
-        self.update_summary_picture()
+        self._update_main_picture()
+        self._update_boolean_picture()
+        self._update_summary_picture()
 
-    def update_main_picture(self):
+        self.canvas.update()
+
+    def _update_main_picture(self):
         start = self.pic_main.start.get()
         end = start + self.pic_main.disp_step.get()
         self.pic_main.set_xlim(start, end)
@@ -210,9 +241,11 @@ class TimeSeriesViewer():
         self.pic_main.verticals['left'].update_xdata(self.pic_main.x_left)
         self.pic_main.verticals['right'].update_xdata(self.pic_main.x_right)
 
-        self.canvas.update()
+    def _update_boolean_picture(self):
+        self.pic_boolean.verticals['left'].update_xdata(self.pic_main.x_left)
+        self.pic_boolean.verticals['right'].update_xdata(self.pic_main.x_right)
 
-    def update_summary_picture(self):
+    def _update_summary_picture(self):
         self.pic_summary.verticals['left'].update_xdata(self.pic_main.start.get())
         self.pic_summary.verticals['right'].update_xdata(self.pic_main.start.get()
                                                          + self.pic_main.disp_step.get())
