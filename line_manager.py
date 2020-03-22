@@ -35,16 +35,23 @@ class LineManager(matplotlib.lines.Line2D):
         self._update_line()
 
     def get_value_whenx(self,x,which='raw'):
-        index = np.argmin(np.array(self.get_xdata()) < x) - 1
-        try:
-            if which == 'modified':
-                return self.modified_ydata[index]
-            elif which == 'drawing':
-                return self.get_ydata()[index]
-            else:
-                return self.raw_ydata[index]
-        except:
-            return 0
+        index = self._find_closest_index(x)
+        if which == 'modified':
+            return self.modified_ydata[index]
+        elif which == 'drawing':
+            return self.get_ydata()[index]
+        else:
+            return self.raw_ydata[index]
+
+    def _find_closest_index(self,x):
+        xdata = np.array(self.get_xdata())
+        if x >= xdata[-1]:
+            index = len(xdata) - 1
+        elif x < xdata[0]:
+            index = 0
+        else:
+            index = np.argmin(xdata < x) - 1
+        return index
 
     def _update_modified_line(self):
         # 유저가 세팅한 값 계산
@@ -114,8 +121,8 @@ class LineWidget(LineManager):
         self.list_scale = LineWidget.init_list_scale
         self.pic = ax
 
-        self.label_left = self.pic.annotate('', (0,0),xycoords='data')
-        self.label_right = self.pic.annotate('', (0,0),xycoords='data')
+        self.label_left = self.pic.annotate('', (0,0), xycoords='data')
+        self.label_right = self.pic.annotate('', (0,0), xycoords='data')
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
             self.label_right.set_c(kwargs['color'])
@@ -219,6 +226,12 @@ class LineWidget(LineManager):
         tmp_label.xy = (x,0)
         tmp_label.set_text(f'{tmpy:.1f}')
         tmp_label.set_position((x,self.get_value_whenx(x, which='drawing')))
+
+    def get_data_selected(self):
+        index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
+        index_max = self._find_closest_index(np.maximum(self.x_selected_left, self.x_selected_right))
+        y = self.modified_ydata[index_min:index_max]
+        return y
 
     def remove_self(self):
         pass

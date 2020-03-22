@@ -48,7 +48,7 @@ class TimeSeriesViewer():
         self.pic_main_container.tick_params(axis="x", labelbottom=False)
         self.pic_main_container.tick_params(axis="y", labelleft=False)
         maingrid = grid_spec.GridSpecFromSubplotSpec(2,1,figgrid[0],height_ratios=[8,1],hspace=0)
-        #axesgrid = self.pic_main_container.add_grids
+
         self.pic_main = self.fig.add_subplot(maingrid[0])
         self.pic_main.tick_params(axis="x", labelbottom=False)
         self.pic_main.tick_params(axis="y", labelleft=False)
@@ -64,10 +64,6 @@ class TimeSeriesViewer():
         self.pic_summary.x_right = 0
         self.pic_summary.x_now = 0
 
-        # self.fig, ax = plt.subplots(2, 1, gridspec_kw={'height_ratios': [10, 1]}, figsize=(10, 6))
-        # self.pic_main = ax[0]
-        # self.pic_summary = ax[1]
-
         # Create Data selector
         self.create_data_selector(self.win, [0, 1])
 
@@ -77,6 +73,10 @@ class TimeSeriesViewer():
 
         # Create Canvas
         self.canvas = PlottingCanvas(self.win, self.fig, [0, 0])
+
+        # Test
+        self.button_test = tk.Button(self.win, text='Test',command=self._test)
+        self.button_test.grid(row=2,column=2)
 
         ###############################################################################################################
         # Initialize
@@ -253,6 +253,9 @@ class TimeSeriesViewer():
     def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
                                            alpha=0.5, drawstyle='steps-post')#marker='o',markersize=1,
+
+    def _test(self):
+        print(self.line_container.list_linewidget['dat1'].get_data_selected())
 
 if __name__ == '__main__':
     import pandas as pd
