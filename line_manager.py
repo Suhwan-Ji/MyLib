@@ -117,6 +117,17 @@ class LineWidget(LineManager):
             data = LineWidget.init_data
         LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
 
+        # Data Auto Scaling
+        data_max = np.max(self.modified_ydata)
+        data_min = np.min(self.modified_ydata)
+        data_range = data_max - data_min
+        if data_range > 1.1: # Flag 데이터는 Scale 하지않음
+            index_scale = np.argmax(np.array(LineWidget.init_list_scale) > (data_range/5))
+            scaler = LineWidget.init_list_scale[index_scale]
+            self.set_lm_value('scale',scaler)
+            positioner = abs(data_min) // scaler
+            self.set_lm_value('position', positioner)
+
         self.data_name = data_col
         self.list_scale = LineWidget.init_list_scale
         self.pic = ax

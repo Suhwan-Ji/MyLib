@@ -16,10 +16,10 @@ mpl.rcParams['agg.path.chunksize'] = 10000
 
 
 class TimeSeriesViewer():
-    def __init__(self, data=None, time_col='Time', main_col=None, predraw_col=None, draw_at_once=False):
+    def __init__(self, data=None, time_col='Time', main_col=None, predraw_col=None, draw_at_once=False, Ts=0.1):
         self.win = tk.Tk()
         self.win.title('TimeSeriesViewer_JSH')
-        self.win.minsize(width=1400,height=900)
+        self.win.minsize(width=1800,height=900)
         #self.win.resizable(width=False,height=False)
 
         ###############################################################################################################
@@ -33,24 +33,26 @@ class TimeSeriesViewer():
             print('Data 없이 런칭하기는 구현 안됨')
             self.win.destroy()
             return
+        self.Ts = Ts
         self.time_col = time_col
 
         ###############################################################################################################
         # Create Widgets
         ###############################################################################################################
         # Create Figure
-        self.fig = plt.figure(figsize=(10, 8))
+        self.fig = plt.figure(figsize=(14, 8))
         self.fig.set_facecolor('grey')
 
         #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
-        figgrid = self.fig.add_gridspec(2,2,height_ratios=[12,1],left=0.05,top=0.97,bottom=0.04)#,hspace=0)width_ratios=[5,1],
+        figgrid = self.fig.add_gridspec(2,2,height_ratios=[12,1],width_ratios=[1,5],
+                                        left=0.05,top=0.97,bottom=0.04,wspace=0.1)#,hspace=0)width_ratios=[5,1],
         # self.pic_main_container = self.fig.add_subplot(figgrid[0,:])
         # self.pic_main_container.tick_params(axis="x", labelbottom=False)
         # self.pic_main_container.tick_params(axis="y", labelleft=False)
         maingrid = grid_spec.GridSpecFromSubplotSpec(2,1,figgrid[0,:],height_ratios=[8,1],hspace=0)
 
         self.pic_main = self.fig.add_subplot(maingrid[0])
-        self.pic_main.set_title('Main Plot')
+        #self.pic_main.set_title('Main Plot')
         self.pic_main.tick_params(axis="x", labelbottom=False)
         self.pic_main.tick_params(axis="y", labelleft=False)
         self.pic_main.x_left = 0
@@ -271,12 +273,15 @@ class TimeSeriesViewer():
     def _test(self):
         data = self.line_container.list_linewidget['dat2'].get_data_selected()
         length = len(data)
-        Ts = 0.001
         n = np.arange(-length/2,length/2,1)
-        f = n / length / Ts
+        f = n / length / self.Ts
         F = np.fft.fftshift(np.fft.fft(data))
-        self.pic_analysis.plot(f,abs(F))
+        self.pic_analysis.plot(f,abs(F),'-ro',markersize=1)#,linestyle='')
+        self.pic_analysis.grid(True)
         self.pic_analysis.set_yscale('log')
+        self.pic_analysis.set_xticks(np.linspace(0,f[-1],20))
+        self.pic_analysis.set_xticklabels(list(map(np.round, self.pic_analysis.get_xticks())), rotation=20)
+        self.pic_analysis.set_xlim([0, f[-1]])
 
     def _clear_test(self):
         self.pic_analysis.cla()
@@ -295,4 +300,4 @@ if __name__ == '__main__':
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'])#,draw_at_once=True)
+    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'],Ts=Ts)#,draw_at_once=True)
