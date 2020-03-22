@@ -280,7 +280,7 @@ class TimeSeriesViewer():
         self.pic_analysis.grid(True)
         self.pic_analysis.set_yscale('log')
         self.pic_analysis.set_xticks(np.linspace(0,f[-1],20))
-        self.pic_analysis.set_xticklabels(list(map(np.round, self.pic_analysis.get_xticks())), rotation=20)
+        self.pic_analysis.set_xticklabels(list(map(lambda x:np.round(x,decimals=2), self.pic_analysis.get_xticks())), rotation=20)
         self.pic_analysis.set_xlim([0, f[-1]])
 
     def _clear_test(self):
