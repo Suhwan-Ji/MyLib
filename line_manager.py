@@ -51,6 +51,8 @@ class LineManager(matplotlib.lines.Line2D):
             index = 0
         else:
             index = np.argmin(xdata < x) - 1
+            if index < 0:
+                index = 0
         return index
 
     def _update_modified_line(self):
@@ -132,8 +134,18 @@ class LineWidget(LineManager):
         self.list_scale = LineWidget.init_list_scale
         self.pic = ax
 
+        # init Indicators
         self.label_left = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)#, fontweight='bold')
         self.label_right = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)
+        self.label_time_left = self.pic.annotate('', (0, 0), xycoords='data',
+                                                 xytext=(0, 12), textcoords='offset pixels',
+                                                 color='white', fontsize=10)
+        self.label_time_right = self.pic.annotate('', (0, 0), xycoords='data',
+                                                  xytext=(0, 12), textcoords='offset pixels',
+                                                  color='white', fontsize=10)
+        self.label_time_delta = self.pic.annotate('', (0, 0), xycoords='data',
+                                                  xytext=(0, 0), textcoords='offset pixels',
+                                                  color='white', fontsize=10)
         self.label_localmax = self.pic.annotate('', (0, 0),
                                                 xytext=(-30, 30), textcoords='offset pixels',
                                                 arrowprops=dict(facecolor='white', shrink=0.05),
@@ -188,6 +200,7 @@ class LineWidget(LineManager):
         def _update_lineitem(item,spinbox):
             tmp = float(spinbox.get())
             self.set_lm_value(item,tmp)
+            self._update_indicator()
 
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
@@ -236,22 +249,47 @@ class LineWidget(LineManager):
     def update_selected_x(self,x,action=None):
         tmpy = self.get_value_whenx(x, which="modified")
         if action=='left':
-            tmp_label = self.label_left
             self.left_yvalue.set(f'left : {tmpy:.3f}')
             self.x_selected_left = x
-
         elif action=='right':
-            tmp_label = self.label_right
             self.right_yvalue.set(f'right : {tmpy:.3f}')
             self.x_selected_right = x
-        tmp_label.xy = (x,0)
-        tmp_label.set_text(f'{tmpy:.1f}')
-        tmp_y = self.get_value_whenx(x, which='drawing')
-        if tmp_y >= 9.7:
-            tmp_y = 9.7
-        elif tmp_y <= 0:
-            tmp_y = 0
-        tmp_label.set_position((x,tmp_y))
+        self._update_indicator()
+
+    def _update_indicator(self):
+        # Vertical Line value
+        # 리팩토링 필요
+        # Left Line
+        tmpx = self.x_selected_left
+        tmpy = self.get_value_whenx(tmpx ,which='modified')
+        self.label_left.xy = (tmpx, 0)
+        self.label_left.set_text(f'{tmpy:.1f}')
+        tmpy = self.get_value_whenx(tmpx, which='drawing')
+        if tmpy >= 9.7:
+            tmpy = 9.7
+        elif tmpy <= 0:
+            tmpy = 0
+        self.label_left.set_position((tmpx, tmpy))
+
+        self.label_time_left.set_text(time_format_plot(tmpx))
+        self.label_time_left.xy = (tmpx,10)
+        #self.label_time_left.set_position((0, 10))
+
+        # Right Line
+        tmpx = self.x_selected_right
+        tmpy = self.get_value_whenx(tmpx, which='modified')
+        self.label_right.xy = (tmpx,0)
+        self.label_right.set_text(f'{tmpy:.1f}')
+        tmpy = self.get_value_whenx(tmpx, which='drawing')
+        if tmpy >= 9.7:
+            tmpy = 9.7
+        elif tmpy <= 0:
+            tmpy = 0
+        self.label_right.set_position((tmpx, tmpy))
+
+        self.label_time_right.set_text(time_format_plot(tmpx))
+        self.label_time_right.xy = (tmpx, 10)
+        #self.label_time_right.set_position((0, 10))
 
         # Local Max
         data_selected = self.get_data_selected()
@@ -263,8 +301,13 @@ class LineWidget(LineManager):
             self.label_localmax.xy = (t, y)
             self.label_localmax.set_text(f'Max:{tmpy:.2f}')
             self.label_localmax.set_visible(True)
+
+            self.label_time_delta.xy = (np.average([self.x_selected_right,self.x_selected_left]), 10)
+            self.label_time_delta.set_text(time_format_plot(abs(self.x_selected_right - self.x_selected_left)))
+            self.label_time_delta.set_visible(True)
         else:
             self.label_localmax.set_visible(False)
+            self.label_time_delta.set_visible(False)
 
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
@@ -357,7 +400,6 @@ class LineContainer():
             self.list_linewidget[col].manager.destroy()
             del self.list_linewidget[col]
         self._update_widget()
-        #print(self.list_linewidget)
 
     def _update_widget(self):
         self.canvas.update_idletasks()
