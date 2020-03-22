@@ -247,8 +247,8 @@ class LineWidget(LineManager):
         tmp_label.xy = (x,0)
         tmp_label.set_text(f'{tmpy:.1f}')
         tmp_y = self.get_value_whenx(x, which='drawing')
-        if tmp_y >= 10:
-            tmp_y = 10
+        if tmp_y >= 9.7:
+            tmp_y = 9.7
         elif tmp_y <= 0:
             tmp_y = 0
         tmp_label.set_position((x,tmp_y))

@@ -221,10 +221,13 @@ class TimeSeriesViewer():
 
     def _canvas_cb_scroll(self, event):
         tmp = self.pic_main.disp_step.get()
+        xlen = self.pic_main.x_now - self.pic_main.start.get()
         if event.button == 'up':
             self.pic_main.disp_step.set(tmp*1.5)
+            self.pic_main.start.set(self.pic_main.x_now - xlen*1.5)
         elif event.button == 'down':
             self.pic_main.disp_step.set(tmp / 1.5)
+            self.pic_main.start.set(self.pic_main.x_now - xlen / 1.5)
         self.update_pictures()
 
     def create_data_selector(self,master, grid_pos):
