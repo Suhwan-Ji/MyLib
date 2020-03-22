@@ -1,6 +1,6 @@
 # import tkinter as tk
 # from tkinter import ttk
-# import numpy as np
+import numpy as np
 # #import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -39,11 +39,11 @@ class TimeSeriesViewer():
         # Create Widgets
         ###############################################################################################################
         # Create Figure
-        self.fig = plt.figure(figsize=(10, 6))
+        self.fig = plt.figure(figsize=(10, 8))
         self.fig.set_facecolor('grey')
 
         #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
-        figgrid = self.fig.add_gridspec(2,1,height_ratios=[12,1],left=0.05,top=0.99,bottom=0.04)#,hspace=0)width_ratios=[5,1],
+        figgrid = self.fig.add_gridspec(2,1,height_ratios=[12,1],left=0.05,top=0.97,bottom=0.04)#,hspace=0)width_ratios=[5,1],
         self.pic_main_container = self.fig.add_subplot(figgrid[0])
         self.pic_main_container.tick_params(axis="x", labelbottom=False)
         self.pic_main_container.tick_params(axis="y", labelleft=False)
@@ -57,7 +57,7 @@ class TimeSeriesViewer():
         self.pic_main.x_reference = 0
         self.pic_main.x_now = 0
 
-        self.pic_boolean = self.fig.add_subplot(maingrid[1],sharex=self.pic_main)
+        self.pic_boolean = self.fig.add_subplot(maingrid[1],sharex=self.pic_main,sharey=self.pic_main)
         self.pic_boolean.tick_params(axis="y", labelleft=False)
         self.pic_summary = self.fig.add_subplot(figgrid[1])
         self.pic_summary.x_left = 0
@@ -96,38 +96,38 @@ class TimeSeriesViewer():
     def _init_pic_main(self):
         self.pic_main.set_ylim(0, 10)
         self.pic_main.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        self.pic_main.set_facecolor('black')
-        self.pic_main.grid(True)
+        self.pic_main.set_facecolor('#03030f')
+        self.pic_main.grid(True,color='grey', linestyle=':', linewidth=0.2)
         self.pic_main.start = tk.DoubleVar(value=0)
         self.pic_main.start_reference = tk.DoubleVar(value=0)
         self.pic_main.disp_step = tk.DoubleVar(value=30)
         # Vertical lines container
         self.pic_main.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_main, self.canvas.update,
-                                                        linestyle='-',color='darkblue'),
+                                                        linestyle='-',color='red'),
                                    'right': VerticalLine(self.pic_main.start.get() + self.pic_main.disp_step.get(),
                                                          self.pic_main, self.canvas.update,
-                                                         linestyle=':',color='darkblue')}
+                                                         linestyle=':',color='red')}
     def _init_pic_boolean(self):
-        self.pic_boolean.set_ylim(0, 5)
-        self.pic_boolean.set_yticks([0, 1, 2, 3, 4, 5])
-        self.pic_boolean.set_facecolor('grey')
-        self.pic_boolean.grid(True)
+        self.pic_boolean.set_ylim(0, 10)
+        self.pic_boolean.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.pic_boolean.set_facecolor('#08080f')
+        self.pic_boolean.grid(True,color='grey', linestyle=':', linewidth=0.2)
         self.pic_boolean.verticals = {'left': VerticalLine(self.pic_main.start.get(), self.pic_boolean, self.canvas.update,
-                                                        linestyle='-',color='darkblue'),
+                                                        linestyle='-',color='red'),
                                    'right': VerticalLine(self.pic_main.start.get() + self.pic_main.disp_step.get(),
                                                          self.pic_boolean, self.canvas.update,
-                                                         linestyle=':',color='darkblue')}
+                                                         linestyle=':',color='red')}
 
     def _init_pic_summary(self,main_col):
         if (main_col is None) or (main_col not in self.datalist):
             main_col = self.datalist[0]
 
-        self.pic_summary.plot(self.data[self.time_col], self.data[main_col], color='darkblue')
+        self.pic_summary.plot(self.data[self.time_col], self.data[main_col], color='forestgreen')
         # Vertical lines container
         self.pic_summary.verticals = {'left': VerticalLine(0, self.pic_summary, self.canvas.update, y=[-30000, 30000],
-                                                           linestyle='-', color='green'),
+                                                           linestyle='-', color='darkblue'),
                                       'right': VerticalLine(0, self.pic_summary, self.canvas.update, y=[-30000, 30000],
-                                                            linestyle=':', color='green')}
+                                                            linestyle=':', color='darkblue')}
 
     def _initial_draw(self, draw_at_once=False, predraw_col=None):
         if draw_at_once:
@@ -161,6 +161,11 @@ class TimeSeriesViewer():
             elif event.button == MouseButton.RIGHT:
                 pic.x_right = pic.x_now
                 self.line_container.update_selected(pic.x_right, action='right')
+            elif event.button == MouseButton.MIDDLE:
+                deltax = pic.x_now - pic.x_reference
+                start = self.pic_main.start_reference.get() - deltax
+                self.pic_main.start_reference.set(self.pic_main.start_reference.get() - deltax)
+                self.pic_main.start.set(start)
         elif pic == self.pic_summary:
             pic.x_now = event.xdata
             if event.button == MouseButton.LEFT:
@@ -192,16 +197,17 @@ class TimeSeriesViewer():
         self.update_pictures()
 
     def _canvas_cb_release(self, event):
-        pic = event.inaxes
-        if (pic == self.pic_main) \
-            or (pic == self.pic_boolean):
-            pic = self.pic_main
-            if event.button == MouseButton.MIDDLE:
-                pic.x_now = event.xdata
-                deltax = pic.x_now - pic.x_reference
-                start = self.pic_main.start_reference.get() - deltax
-                self.pic_main.start.set(start)
-        self.update_pictures()
+        # pic = event.inaxes
+        # if (pic == self.pic_main) \
+        #     or (pic == self.pic_boolean):
+        #     pic = self.pic_main
+        #     if event.button == MouseButton.MIDDLE:
+        #         pic.x_now = event.xdata
+        #         deltax = pic.x_now - pic.x_reference
+        #         start = self.pic_main.start_reference.get() - deltax
+        #         self.pic_main.start.set(start)
+        # self.update_pictures()
+        pass
 
     def _canvas_cb_scroll(self, event):
         tmp = self.pic_main.disp_step.get()
@@ -252,10 +258,22 @@ class TimeSeriesViewer():
 
     def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
-                                           alpha=0.5, drawstyle='steps-post')#marker='o',markersize=1,
+                                           alpha=0.7, drawstyle='steps-post',linewidth=1.5)#marker='o',markersize=1,
 
     def _test(self):
-        print(self.line_container.list_linewidget['dat1'].get_data_selected())
+        # print('Main Pic : ',self.pic_main.lines)
+        # print('bool Pic : ',self.pic_boolean.lines)
+        # print(self.line_container.list_linewidget['dat1'].axes)
+        # self.pic_main.lines.remove(self.line_container.list_linewidget['dat1'])
+        # self.line_container.list_linewidget['dat1']._axes = self.pic_boolean
+        # self.pic_boolean.add_line(self.line_container.list_linewidget['dat1'])
+        # self.line_container.list_linewidget['dat1']._update_line()
+        # print('Action!')
+        # print('Main Pic : ', self.pic_main.lines)
+        # print('bool Pic : ', self.pic_boolean.lines)
+        # print(self.line_container.list_linewidget['dat1'].axes)
+        print(dir(self.line_container.list_linewidget['dat1']))
+        self.line_container.list_linewidget['dat1'].set_fillstyle('bottom')
 
 if __name__ == '__main__':
     import pandas as pd

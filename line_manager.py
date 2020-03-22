@@ -121,11 +121,20 @@ class LineWidget(LineManager):
         self.list_scale = LineWidget.init_list_scale
         self.pic = ax
 
-        self.label_left = self.pic.annotate('', (0,0), xycoords='data')
-        self.label_right = self.pic.annotate('', (0,0), xycoords='data')
+        self.label_left = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)#, fontweight='bold')
+        self.label_right = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)
+        self.label_localmax = self.pic.annotate('', (0, 0),
+                                                xytext=(-30, 30), textcoords='offset pixels',
+                                                arrowprops=dict(facecolor='white', shrink=0.05),
+                                                fontsize=12,
+                                                horizontalalignment='right', verticalalignment='top')
+        self.label_localmax.set_visible(False)
+        
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
             self.label_right.set_c(kwargs['color'])
+            self.label_localmax.set_c(kwargs['color'])
+            #self.label_localmax.set_arrowstyle(facecolor=kwargs['color'])
 
         self.x_selected_left = 0
         self.x_selected_right = 0
@@ -219,13 +228,32 @@ class LineWidget(LineManager):
             tmp_label = self.label_left
             self.left_yvalue.set(f'left : {tmpy:.3f}')
             self.x_selected_left = x
+
         elif action=='right':
             tmp_label = self.label_right
             self.right_yvalue.set(f'right : {tmpy:.3f}')
             self.x_selected_right = x
         tmp_label.xy = (x,0)
         tmp_label.set_text(f'{tmpy:.1f}')
-        tmp_label.set_position((x,self.get_value_whenx(x, which='drawing')))
+        tmp_y = self.get_value_whenx(x, which='drawing')
+        if tmp_y >= 10:
+            tmp_y = 10
+        elif tmp_y <= 0:
+            tmp_y = 0
+        tmp_label.set_position((x,tmp_y))
+
+        # Local Max
+        data_selected = self.get_data_selected()
+        if len(data_selected) > 0:
+            index_local_max = pd.Series.idxmax(data_selected)
+            y = self.get_ydata()[index_local_max]
+            t = self.get_xdata()[index_local_max]
+            tmpy = self.modified_ydata[index_local_max]
+            self.label_localmax.xy = (t, y)
+            self.label_localmax.set_text(f'Max:{tmpy:.2f}')
+            self.label_localmax.set_visible(True)
+        else:
+            self.label_localmax.set_visible(False)
 
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
