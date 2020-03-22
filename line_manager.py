@@ -94,17 +94,6 @@ class LineManager(matplotlib.lines.Line2D):
             tmp = self.scale
         return tmp
 
-    def toggle_line(self):
-        tmp = self.get_visible()
-        self.set_visible(not tmp)
-        self.func_line_update()
-
-    # def set_style(self,**kwargs):
-    #     if 'drawstyle' in kwargs:
-    #         self.set_drawstyle(kwargs['drawstyle'])
-    #     if 'color' in kwargs:
-    #         self.set_color(kwargs['color'])
-    #
 
 class LineWidget(LineManager):
     init_data = pd.DataFrame()
@@ -137,6 +126,13 @@ class LineWidget(LineManager):
         # init Indicators
         self.label_left = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)#, fontweight='bold')
         self.label_right = self.pic.annotate('', (0,0), xycoords='data', fontsize=12)
+        self.label_localmax = self.pic.annotate('', (0, 0),
+                                                xytext=(-30, 30), textcoords='offset pixels',
+                                                arrowprops=dict(facecolor='white', shrink=0.05),
+                                                fontsize=12,
+                                                horizontalalignment='right', verticalalignment='top')
+
+        # 라인하나마다 전부 그리게되어있으므로 위로 올려야함
         self.label_time_left = self.pic.annotate('', (0, 0), xycoords='data',
                                                  xytext=(0, 12), textcoords='offset pixels',
                                                  color='white', fontsize=10)
@@ -146,12 +142,6 @@ class LineWidget(LineManager):
         self.label_time_delta = self.pic.annotate('', (0, 0), xycoords='data',
                                                   xytext=(0, 0), textcoords='offset pixels',
                                                   color='white', fontsize=10)
-        self.label_localmax = self.pic.annotate('', (0, 0),
-                                                xytext=(-30, 30), textcoords='offset pixels',
-                                                arrowprops=dict(facecolor='white', shrink=0.05),
-                                                fontsize=12,
-                                                horizontalalignment='right', verticalalignment='top')
-        self.label_localmax.set_visible(False)
 
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
@@ -161,8 +151,6 @@ class LineWidget(LineManager):
 
         self.x_selected_left = 0
         self.x_selected_right = 0
-        # self.y_selected_left = 0
-        # self.y_selected_right = 0
 
         self.func_destroy = lambda:func_destroy(self.data_name)
 
@@ -170,7 +158,7 @@ class LineWidget(LineManager):
         self.manager.pack()
 
         def _button_show_callback():
-            self.toggle_line()
+            self.toggle_visible()
             if self.get_visible():
                 self.button_show.config(background=self.get_color())
             else:
@@ -232,31 +220,42 @@ class LineWidget(LineManager):
         self.entry2.insert(0, string=str(self.get_lm_value('offset')))
         self.entry2.state(['readonly'])
 
-        self.display_frame = ttk.LabelFrame(self.manager)
-        self.display_frame.grid(row=0,column=4, rowspan=2,sticky=tk.N+tk.S)
-        # self.current_yvalue = tk.StringVar(value="cur : ")
-        # tk.Label(self.display_frame,textvariable=self.current_yvalue,
-        #          width=15, anchor='w').grid(row=0,column=0)
-        self.left_yvalue = tk.StringVar(value="left : ")
-        tk.Label(self.display_frame, textvariable=self.left_yvalue,
-                 width=12, anchor='w').grid(row=0, column=0,sticky=tk.W) # justify=tk.LEFT
-        self.right_yvalue = tk.StringVar(value="right : ")
-        tk.Label(self.display_frame, textvariable=self.right_yvalue,
-                 width=12, anchor='w').grid(row=1, column=0,sticky=tk.W)
-
         ttk.Button(self.manager, text='del',command=self.func_destroy,width=3).grid(row=0,column=5)
+        self._update_indicator()
+
+    def toggle_visible(self):
+        if self.get_visible():
+            self.set_visible(False)
+            self.label_left.set_visible(False)
+            self.label_right.set_visible(False)
+            self.label_localmax.set_visible(False)
+
+            self.label_time_left.set_visible(False)
+            self.label_time_right.set_visible(False)
+            self.label_time_delta.set_visible(False)
+        else:
+            self.set_visible(True)
+            self.label_left.set_visible(True)
+            self.label_right.set_visible(True)
+            self.label_localmax.set_visible(True)
+
+            self.label_time_left.set_visible(True)
+            self.label_time_right.set_visible(True)
+            self.label_time_delta.set_visible(True)
+        self.func_line_update()
+        self._update_indicator()
 
     def update_selected_x(self,x,action=None):
-        tmpy = self.get_value_whenx(x, which="modified")
         if action=='left':
-            self.left_yvalue.set(f'left : {tmpy:.3f}')
             self.x_selected_left = x
         elif action=='right':
-            self.right_yvalue.set(f'right : {tmpy:.3f}')
             self.x_selected_right = x
         self._update_indicator()
 
     def _update_indicator(self):
+        if not self.get_visible():
+            return 0
+
         # Vertical Line value
         # 리팩토링 필요
         # Left Line
@@ -273,7 +272,6 @@ class LineWidget(LineManager):
 
         self.label_time_left.set_text(time_format_plot(tmpx))
         self.label_time_left.xy = (tmpx,10)
-        #self.label_time_left.set_position((0, 10))
 
         # Right Line
         tmpx = self.x_selected_right
@@ -289,7 +287,6 @@ class LineWidget(LineManager):
 
         self.label_time_right.set_text(time_format_plot(tmpx))
         self.label_time_right.xy = (tmpx, 10)
-        #self.label_time_right.set_position((0, 10))
 
         # Local Max
         data_selected = self.get_data_selected()
@@ -317,14 +314,9 @@ class LineWidget(LineManager):
 
     def remove_self(self):
         pass
-        # self.remove()
-        # self.manager.destroy()
 
     def __del__(self):
         print(f'{self.data_name} has been deleted')
-
-    def link_line(self, ax):
-        self.linemanager.link_line(ax)
 
 
 class LineContainer():
@@ -345,6 +337,7 @@ class LineContainer():
         self.container = tk.LabelFrame(master, text='Lines', bd=2)
         self.container.grid(row=grid_pos[0], column=grid_pos[1])
 
+        # Time indicator 올리고 삭제
         self.time_container = tk.LabelFrame(self.container, text='Times', bd=2)
         self.time_container.grid(row=0)
         self._add_timeindicator(self.time_container)
@@ -358,15 +351,16 @@ class LineContainer():
         self.bar_H = tk.Scrollbar(self.widget_container,orient=tk.HORIZONTAL)
         self.bar_H["command"] = self.canvas.xview
 
-        self.canvas.grid(row=0,column=0)#pack(side='left')  # fill='both', expand=True, side='left')
-        self.bar.grid(row=0,column=1,sticky=tk.N+tk.S)#.pack(fill='y', side='right')
-        self.bar_H.grid(row=1,column=0,columnspan=2,sticky=tk.W+tk.E)#pack(fill='y', side='bottom')
+        self.canvas.grid(row=0,column=0)
+        self.bar.grid(row=0,column=1,sticky=tk.N+tk.S)
+        self.bar_H.grid(row=1,column=0,columnspan=2,sticky=tk.W+tk.E)
 
         self.dframe = tk.Frame(self.canvas)
 
         self.canvas.create_window(0, 0, window=self.dframe)
         self._update_widget()
 
+    # Time indicator 올리고 삭제
     def _add_timeindicator(self,master):
         self.time_selected_left = tk.StringVar(value='Start : \n\n')
         self.time_selected_right = tk.StringVar(value='End : \n\n')
@@ -410,6 +404,8 @@ class LineContainer():
     def update_selected(self,x,action=None):
         for line in self.list_linewidget.values():
             line.update_selected_x(x,action=action)
+
+        # Time indicator 올리고 삭제
         if len(self.list_linewidget) > 0:
             self.time_selected_left.set(f'Start : \n{time_format(line.x_selected_left)}')
             self.time_selected_right.set(f'End : \n{time_format(line.x_selected_right)}')
@@ -425,13 +421,9 @@ class VerticalLine(matplotlib.lines.Line2D):
         matplotlib.lines.Line2D.__init__(self, [x,x], y, **kwargs)
         ax.add_line(self)
         self.func_line_update = func_line_update
-        #self.func_line_update()
-        #ax.annotate('here',(0,0),c='blue')
 
     def update_xdata(self,x):
         self.set_xdata([x,x])
-        #self.func_line_update()
-
 
     def __del__(self):
         print('VerticalLine has been deleted')
