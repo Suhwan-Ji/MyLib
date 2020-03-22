@@ -96,7 +96,7 @@ class TimeSeriesViewer():
     def _init_pic_main(self):
         self.pic_main.set_ylim(0, 10)
         self.pic_main.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        self.pic_main.set_facecolor('grey')
+        self.pic_main.set_facecolor('black')
         self.pic_main.grid(True)
         self.pic_main.start = tk.DoubleVar(value=0)
         self.pic_main.start_reference = tk.DoubleVar(value=0)

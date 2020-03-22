@@ -32,9 +32,6 @@ class LineManager(matplotlib.lines.Line2D):
         self.position = position
         self.scale = scale
 
-        self.x_selected_left = 0
-        self.x_selected_right = 0
-
         self._update_line()
 
     def get_value_whenx(self,x,which='raw'):
@@ -42,22 +39,12 @@ class LineManager(matplotlib.lines.Line2D):
         try:
             if which == 'modified':
                 return self.modified_ydata[index]
+            elif which == 'drawing':
+                return self.get_ydata()[index]
             else:
                 return self.raw_ydata[index]
         except:
             return 0
-
-    #     print(get_data_selected(which))
-    #
-    # def get_data_selected(self,which='raw'):
-    #     start = np.minimum(self.x_selected_left,self.x_selected_right)
-    #     end = np.maximum(self.x_selected_left, self.x_selected_right)
-    #     index_start = np.argmin(np.array(self.get_xdata()) < start) - 1
-    #     index_end = np.argmin(np.array(self.get_xdata()) < end) - 1
-    #     if which == 'modified':
-    #         return self.modified_ydata[index_start:index_end]
-    #     else:
-    #         return self.raw_ydata[index_start:index_end]
 
     def _update_modified_line(self):
         # 유저가 세팅한 값 계산
@@ -116,15 +103,27 @@ class LineWidget(LineManager):
     init_data['var'] = np.random.randn(300)
 
     # init_list_poition = [x * 0.1 for x in range(100)]
-    init_list_scale = [0.1, 0.2, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000]
+    init_list_scale = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000]
 
-    def __init__(self, master, func_line_update, func_destroy, data_col='var', time_col='time', data=None, **kwargs):
+    def __init__(self, master, ax, func_line_update, func_destroy, data_col='var', time_col='time', data=None, **kwargs):
         if data is None:
             data = LineWidget.init_data
         LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
 
         self.data_name = data_col
         self.list_scale = LineWidget.init_list_scale
+        self.pic = ax
+
+        self.label_left = self.pic.annotate('', (0,0),xycoords='data')
+        self.label_right = self.pic.annotate('', (0,0),xycoords='data')
+        if 'color' in kwargs:
+            self.label_left.set_c(kwargs['color'])
+            self.label_right.set_c(kwargs['color'])
+
+        self.x_selected_left = 0
+        self.x_selected_right = 0
+        # self.y_selected_left = 0
+        # self.y_selected_right = 0
 
         self.func_destroy = lambda:func_destroy(self.data_name)
 
@@ -208,14 +207,18 @@ class LineWidget(LineManager):
         ttk.Button(self.manager, text='del',command=self.func_destroy,width=3).grid(row=0,column=5)
 
     def update_selected_x(self,x,action=None):
+        tmpy = self.get_value_whenx(x, which="modified")
         if action=='left':
-            self.left_yvalue.set(f'left : {self.get_value_whenx(x,which="modified"):.3f}')
+            tmp_label = self.label_left
+            self.left_yvalue.set(f'left : {tmpy:.3f}')
             self.x_selected_left = x
         elif action=='right':
-            self.right_yvalue.set(f'right : {self.get_value_whenx(x,which="modified"):.3f}')
+            tmp_label = self.label_right
+            self.right_yvalue.set(f'right : {tmpy:.3f}')
             self.x_selected_right = x
-        # else:
-        #     self.current_yvalue.set(f'cur : {self.get_rawy_whenx(x):.3f}')
+        tmp_label.xy = (x,0)
+        tmp_label.set_text(f'{tmpy:.1f}')
+        tmp_label.set_position((x,self.get_value_whenx(x, which='drawing')))
 
     def remove_self(self):
         pass
@@ -286,7 +289,7 @@ class LineContainer():
             orderlen = len(self.list_linewidget)%tmplen
             color = LineContainer.list_color[orderlen]
 
-            tmp = LineWidget(self.dframe, func_line_update, self.remove_linewidget,
+            tmp = LineWidget(self.dframe, ax, func_line_update, self.remove_linewidget,
                              data_col=data_name, time_col=time_col, data=data,
                              color=color,**kwargs)
 
@@ -294,6 +297,7 @@ class LineContainer():
             ax.add_line(tmp)
             self._update_widget()
             func_line_update()
+        #return self.list_linewidget
 
     def remove_linewidget(self,col):
         if col in self.list_linewidget.keys():
@@ -328,10 +332,12 @@ class VerticalLine(matplotlib.lines.Line2D):
         ax.add_line(self)
         self.func_line_update = func_line_update
         #self.func_line_update()
+        #ax.annotate('here',(0,0),c='blue')
 
     def update_xdata(self,x):
         self.set_xdata([x,x])
         #self.func_line_update()
+
 
     def __del__(self):
         print('VerticalLine has been deleted')
