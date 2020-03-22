@@ -117,6 +117,7 @@ class TimeSeriesViewer():
                                    'right': VerticalLine(self.pic_main.start.get() + self.pic_main.disp_step.get(),
                                                          self.pic_main, self.canvas.update,
                                                          linestyle=':',color='red')}
+
     def _init_pic_boolean(self):
         self.pic_boolean.set_ylim(0, 10)
         self.pic_boolean.set_yticks([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -198,7 +199,6 @@ class TimeSeriesViewer():
             elif event.button == MouseButton.MIDDLE:
                 pic.x_reference = pic.x_now  # 드래그 시작위치
                 pic.start_reference.set(pic.start.get())
-
         elif event.inaxes == self.pic_summary:
             self.pic_summary.x_now = event.xdata
             if event.button == MouseButton.LEFT:
@@ -220,14 +220,22 @@ class TimeSeriesViewer():
         pass
 
     def _canvas_cb_scroll(self, event):
-        tmp = self.pic_main.disp_step.get()
-        xlen = self.pic_main.x_now - self.pic_main.start.get()
-        if event.button == 'up':
-            self.pic_main.disp_step.set(tmp*1.5)
-            self.pic_main.start.set(self.pic_main.x_now - xlen*1.5)
-        elif event.button == 'down':
-            self.pic_main.disp_step.set(tmp / 1.5)
-            self.pic_main.start.set(self.pic_main.x_now - xlen / 1.5)
+        if (event.inaxes == self.pic_main)\
+          or (event.inaxes == self.pic_boolean):  # main에서 스크롤시, 현재위치 기준으로 핀치
+            tmp = self.pic_main.disp_step.get()
+            xlen = self.pic_main.x_now - self.pic_main.start.get()
+            if event.button == 'up':
+                self.pic_main.disp_step.set(tmp*1.5)
+                self.pic_main.start.set(self.pic_main.x_now - xlen*1.5)
+            elif event.button == 'down':
+                self.pic_main.disp_step.set(tmp / 1.5)
+                self.pic_main.start.set(self.pic_main.x_now - xlen / 1.5)
+        elif event.inaxes == self.pic_summary:  # summary에서 스크롤시, step만 변경
+            tmp = self.pic_main.disp_step.get()
+            if event.button == 'up':
+                self.pic_main.disp_step.set(tmp * 1.5)
+            elif event.button == 'down':
+                self.pic_main.disp_step.set(tmp / 1.5)
         self.update_pictures()
 
     def create_data_selector(self,master, grid_pos):
@@ -285,9 +293,12 @@ class TimeSeriesViewer():
         self.pic_analysis.set_xticks(np.linspace(0,f[-1],20))
         self.pic_analysis.set_xticklabels(list(map(lambda x:np.round(x,decimals=2), self.pic_analysis.get_xticks())), rotation=20)
         self.pic_analysis.set_xlim([0, f[-1]])
+        self.canvas.update()
+
 
     def _clear_test(self):
         self.pic_analysis.cla()
+        self.canvas.update()
 
 if __name__ == '__main__':
     import pandas as pd

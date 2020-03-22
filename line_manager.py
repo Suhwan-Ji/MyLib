@@ -163,7 +163,6 @@ class LineWidget(LineManager):
                 self.button_show.config(background=self.get_color())
             else:
                 self.button_show.config(background='grey')
-
         self.button_show = tk.Button(self.manager, text='show', width=6, bg=self.get_color())
         self.button_show.config(command=_button_show_callback)
         self.button_show.grid(row=0, column=0)
@@ -180,7 +179,6 @@ class LineWidget(LineManager):
                 self.set_lm_value('gain',float(self.entry1.get()))
                 self.set_lm_value('offset', float(self.entry2.get()))
                 self.button_apply.config(text='modify >')
-
         self.button_apply = tk.Button(self.manager, text='modify >', width=6)
         self.button_apply.config(command=_button_apply_callback)
         self.button_apply.grid(row=1, column=0)
@@ -189,7 +187,6 @@ class LineWidget(LineManager):
             tmp = float(spinbox.get())
             self.set_lm_value(item,tmp)
             self._update_indicator()
-
         self.frame_position = tk.LabelFrame(self.manager, text='Position')
         self.frame_position.grid(row=0, column=2)
         self.spin1 = ttk.Spinbox(self.frame_position, from_=0, to=10.0,increment=0.2, width=5, state='readonly')
@@ -255,7 +252,6 @@ class LineWidget(LineManager):
     def _update_indicator(self):
         if not self.get_visible():
             return 0
-
         # Vertical Line value
         # 리팩토링 필요
         # Left Line
