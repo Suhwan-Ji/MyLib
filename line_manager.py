@@ -129,7 +129,7 @@ class LineWidget(LineManager):
                                                 fontsize=12,
                                                 horizontalalignment='right', verticalalignment='top')
         self.label_localmax.set_visible(False)
-        
+
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
             self.label_right.set_c(kwargs['color'])

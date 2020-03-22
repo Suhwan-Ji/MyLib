@@ -43,13 +43,14 @@ class TimeSeriesViewer():
         self.fig.set_facecolor('grey')
 
         #figgrid = grid_spec.GridSpec(nrows=2,ncols=1,figure=self.fig)
-        figgrid = self.fig.add_gridspec(2,1,height_ratios=[12,1],left=0.05,top=0.97,bottom=0.04)#,hspace=0)width_ratios=[5,1],
-        self.pic_main_container = self.fig.add_subplot(figgrid[0])
-        self.pic_main_container.tick_params(axis="x", labelbottom=False)
-        self.pic_main_container.tick_params(axis="y", labelleft=False)
-        maingrid = grid_spec.GridSpecFromSubplotSpec(2,1,figgrid[0],height_ratios=[8,1],hspace=0)
+        figgrid = self.fig.add_gridspec(2,2,height_ratios=[12,1],left=0.05,top=0.97,bottom=0.04)#,hspace=0)width_ratios=[5,1],
+        # self.pic_main_container = self.fig.add_subplot(figgrid[0,:])
+        # self.pic_main_container.tick_params(axis="x", labelbottom=False)
+        # self.pic_main_container.tick_params(axis="y", labelleft=False)
+        maingrid = grid_spec.GridSpecFromSubplotSpec(2,1,figgrid[0,:],height_ratios=[8,1],hspace=0)
 
         self.pic_main = self.fig.add_subplot(maingrid[0])
+        self.pic_main.set_title('Main Plot')
         self.pic_main.tick_params(axis="x", labelbottom=False)
         self.pic_main.tick_params(axis="y", labelleft=False)
         self.pic_main.x_left = 0
@@ -59,10 +60,15 @@ class TimeSeriesViewer():
 
         self.pic_boolean = self.fig.add_subplot(maingrid[1],sharex=self.pic_main,sharey=self.pic_main)
         self.pic_boolean.tick_params(axis="y", labelleft=False)
-        self.pic_summary = self.fig.add_subplot(figgrid[1])
+
+        self.pic_summary = self.fig.add_subplot(figgrid[1,0])
+        self.pic_summary.set_title('Summary')
         self.pic_summary.x_left = 0
         self.pic_summary.x_right = 0
         self.pic_summary.x_now = 0
+
+        self.pic_analysis = self.fig.add_subplot(figgrid[1,1])
+        self.pic_analysis.set_title('Analysis')
 
         # Create Data selector
         self.create_data_selector(self.win, [0, 1])
@@ -77,6 +83,8 @@ class TimeSeriesViewer():
         # Test
         self.button_test = tk.Button(self.win, text='Test',command=self._test)
         self.button_test.grid(row=2,column=2)
+        self.button_test = tk.Button(self.win, text='clearTest',command=self._clear_test)
+        self.button_test.grid(row=2,column=3)
 
         ###############################################################################################################
         # Initialize
@@ -258,32 +266,31 @@ class TimeSeriesViewer():
 
     def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
-                                           alpha=0.7, drawstyle='steps-post',linewidth=1.5)#marker='o',markersize=1,
+                                           alpha=0.5, drawstyle='steps-post',linewidth=1.5)#marker='o',markersize=1,
 
     def _test(self):
-        # print('Main Pic : ',self.pic_main.lines)
-        # print('bool Pic : ',self.pic_boolean.lines)
-        # print(self.line_container.list_linewidget['dat1'].axes)
-        # self.pic_main.lines.remove(self.line_container.list_linewidget['dat1'])
-        # self.line_container.list_linewidget['dat1']._axes = self.pic_boolean
-        # self.pic_boolean.add_line(self.line_container.list_linewidget['dat1'])
-        # self.line_container.list_linewidget['dat1']._update_line()
-        # print('Action!')
-        # print('Main Pic : ', self.pic_main.lines)
-        # print('bool Pic : ', self.pic_boolean.lines)
-        # print(self.line_container.list_linewidget['dat1'].axes)
-        print(dir(self.line_container.list_linewidget['dat1']))
-        self.line_container.list_linewidget['dat1'].set_fillstyle('bottom')
+        data = self.line_container.list_linewidget['dat2'].get_data_selected()
+        length = len(data)
+        Ts = 0.001
+        n = np.arange(-length/2,length/2,1)
+        f = n / length / Ts
+        F = np.fft.fftshift(np.fft.fft(data))
+        self.pic_analysis.plot(f,abs(F))
+        self.pic_analysis.set_yscale('log')
+
+    def _clear_test(self):
+        self.pic_analysis.cla()
 
 if __name__ == '__main__':
     import pandas as pd
     import numpy as np
     data = pd.DataFrame()
-    dlen = 3000
-    Ts = 0.1
+    dlen = 30000
+    Ts = 0.01
     data['Time'] = np.arange(0, dlen * Ts, Ts)
-    data['dat1'] = 2 * np.sin(2 * np.pi * 0.5 * data['Time']) + data['Time']
-    data['dat2'] = 2 * np.sin(2 * np.pi * 0.5 * data['Time']) + 1 * np.cos(2 * np.pi * 3 * data['Time'])
+    data['dat1'] = 2 * np.sin(2 * np.pi * 2 * data['Time']) + data['Time']
+    data['dat2'] = 2 * np.sin(2 * np.pi * 1 * data['Time']) + 5 * np.cos(2 * np.pi * 3 * data['Time']) + 8 * np.cos(2 * np.pi * 12 * data['Time'])\
+                   + 0.8 * np.random.randn(dlen)
     data['dat3'] = 0.3 * np.random.randn(dlen) + data['dat2']
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
