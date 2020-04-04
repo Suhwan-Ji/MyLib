@@ -1,23 +1,16 @@
-from func_util import LimitedList
+#from func_util import LimitedList
 import matplotlib.lines
 import tkinter as tk
 from tkinter import ttk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import numpy as np
+from func_util import time_format_plot
 
 def time_format(x):
     hour, rest = np.divmod(x, 3600)
     minute, second = np.divmod(rest, 60)
     # second, rest = np.divmod(rest, 100)
     return f"{int(hour)}시간 {int(minute)}분\n{second:.3f}초"
-
-def time_format_plot(x):
-    hour, rest = np.divmod(x, 3600)
-    minute, rest = np.divmod(rest, 60)
-    second = rest // 1
-    rest = rest % 1 * 1000
-    return f"{int(hour):02d}:{int(minute):02d}:{int(second):02d}:{int(rest):02d}"
 
 
 class LineManager(matplotlib.lines.Line2D):
@@ -423,21 +416,3 @@ class VerticalLine(matplotlib.lines.Line2D):
 
     def __del__(self):
         print('VerticalLine has been deleted')
-
-
-class PlottingCanvas():
-    def __init__(self,master,fig, grid_pos):
-        container = ttk.LabelFrame(master, text='플로터')
-        container.grid(row=grid_pos[0], column=grid_pos[1], rowspan=2)
-
-        self.canvas = FigureCanvasTkAgg(fig, master=container)
-        self.canvas.get_tk_widget().grid(row=0, column=0)
-
-    def update(self):
-        self.canvas.draw_idle()
-
-    def cbind(self, id, func):
-        self.canvas.mpl_connect(id, func)
-
-    def __del__(self):
-        print('PlottingCanvas has been deleted')

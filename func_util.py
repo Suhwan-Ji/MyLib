@@ -53,3 +53,11 @@ class LimitedList():
         tmp = self.index_now - step
         self.index_now = tmp if tmp > 0 else 0
         return self.get_now()
+
+
+def time_format_plot(x):
+    hour, rest = np.divmod(x, 3600)
+    minute, rest = np.divmod(rest, 60)
+    second = rest // 1
+    rest = rest % 1 * 1000
+    return f"{int(hour):02d}:{int(minute):02d}:{int(second):02d}:{int(rest):02d}"
