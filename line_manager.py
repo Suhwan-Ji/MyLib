@@ -19,7 +19,6 @@ class LineManager(matplotlib.lines.Line2D):
 
         self.func_line_update = func_line_update
         self.raw_ydata = self.get_ydata()
-        self.modified_ydata = self.raw_ydata
         self.offset = offset
         self.gain = gain
         self.position = position
@@ -27,16 +26,16 @@ class LineManager(matplotlib.lines.Line2D):
 
         self._update_line()
 
-    def get_value_whenx(self,x,which='raw'):
+    def get_value_whenx(self, x, which='raw'):
         index = self._find_closest_index(x)
         if which == 'modified':
-            return self.modified_ydata[index]
+            return self._calc_modified_ydata(self.raw_ydata[index])
         elif which == 'drawing':
             return self.get_ydata()[index]
         else:
             return self.raw_ydata[index]
 
-    def _find_closest_index(self,x):
+    def _find_closest_index(self, x):
         xdata = np.array(self.get_xdata())
         if x >= xdata[-1]:
             index = len(xdata) - 1
@@ -48,20 +47,17 @@ class LineManager(matplotlib.lines.Line2D):
                 index = 0
         return index
 
-    def _update_modified_line(self):
-        # 유저가 세팅한 값 계산
-        self.modified_ydata = self.raw_ydata * self.gain + self.offset
+    def _calc_modified_ydata(self, y):
+        return y * self.gain + self.offset # 값 하나에 대해 Modified Data 얻기
 
-    def _update_visual_line(self):
-        # 플로팅될 값 계산
-        tmpdata = self.modified_ydata / self.scale + self.position
-        self.set_ydata(tmpdata)
+    def get_modified_ydata(self):
+        # Returns Modified Line
+        return self.raw_ydata * self.gain + self.offset  # 유저가 세팅한 값 계산
 
     def _update_line(self):
-        # 계산값 우선적용
-        self._update_modified_line()
-        # Scale, Pos적용
-        self._update_visual_line()
+        tmp = self.get_modified_ydata()  # 계산값 우선적용
+        tmp = tmp / self.scale + self.position  # Scale, Pos적용
+        self.set_ydata(tmp)
         self.func_line_update()
 
     def set_lm_value(self, item, value):
@@ -102,8 +98,8 @@ class LineWidget(LineManager):
         LineManager.__init__(self, data[time_col], data[data_col], func_line_update, **kwargs)
 
         # Data Auto Scaling
-        data_max = np.max(self.modified_ydata)
-        data_min = np.min(self.modified_ydata)
+        data_max = np.max(self.get_modified_ydata())
+        data_min = np.min(self.get_modified_ydata())
         data_range = data_max - data_min
         if data_range > 1.1: # Flag 데이터는 Scale 하지않음
             index_scale = np.argmax(np.array(LineWidget.init_list_scale) > (data_range/5))
@@ -283,7 +279,7 @@ class LineWidget(LineManager):
             index_local_max = pd.Series.idxmax(data_selected)
             y = self.get_ydata()[index_local_max]
             t = self.get_xdata()[index_local_max]
-            tmpy = self.modified_ydata[index_local_max]
+            tmpy = self.get_modified_ydata()[index_local_max]
             self.label_localmax.xy = (t, y)
             self.label_localmax.set_text(f'Max:{tmpy:.2f}')
             self.label_localmax.set_visible(True)
@@ -298,7 +294,7 @@ class LineWidget(LineManager):
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
         index_max = self._find_closest_index(np.maximum(self.x_selected_left, self.x_selected_right))
-        y = self.modified_ydata[index_min:index_max]
+        y = self.get_modified_ydata()[index_min:index_max]
         return y
 
     def remove_self(self):
