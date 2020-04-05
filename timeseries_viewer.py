@@ -31,7 +31,7 @@ class TimeSeriesViewer():
         self.create_data_selector(self.win, [0, 1])
 
         # Create LineContainer
-        self.line_container = LineContainer(self.win,[1, 1])
+        self.line_container = LineContainer(self.win, [1, 1])
 
         # Create Canvas
         self.canvas = PlottingCanvas(self.win, self.line_container, [0, 0])
@@ -49,6 +49,9 @@ class TimeSeriesViewer():
         self.pic_boolean = self.canvas.pic_boolean
         self.pic_summary = self.canvas.pic_summary
         self.pic_analysis = self.canvas.pic_analysis
+
+        # Main Picture에 TimeLabel 추가, 이부분 좀 꼬인듯
+        self.line_container.init_time_label(self.canvas.pic_main)
 
         self._initial_draw(predraw_col=predraw_col, draw_at_once=draw_at_once)
 

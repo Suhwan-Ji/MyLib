@@ -36,6 +36,7 @@ class LineManager(matplotlib.lines.Line2D):
             return self.raw_ydata[index]
 
     def _find_closest_index(self, x):
+        # 주어진 x에 가장 가까운 데이터 인덱스를 리턴
         xdata = np.array(self.get_xdata())
         if x >= xdata[-1]:
             index = len(xdata) - 1
@@ -121,16 +122,16 @@ class LineWidget(LineManager):
                                                 fontsize=12,
                                                 horizontalalignment='right', verticalalignment='top')
 
-        # 라인하나마다 전부 그리게되어있으므로 위로 올려야함
-        self.label_time_left = self.pic.annotate('', (0, 0), xycoords='data',
-                                                 xytext=(0, 12), textcoords='offset pixels',
-                                                 color='white', fontsize=10)
-        self.label_time_right = self.pic.annotate('', (0, 0), xycoords='data',
-                                                  xytext=(0, 12), textcoords='offset pixels',
-                                                  color='white', fontsize=10)
-        self.label_time_delta = self.pic.annotate('', (0, 0), xycoords='data',
-                                                  xytext=(0, 0), textcoords='offset pixels',
-                                                  color='white', fontsize=10)
+        # # 라인하나마다 전부 그리게되어있으므로 위로 올려야함
+        # self.label_time_left = self.pic.annotate('', (0, 0), xycoords='data',
+        #                                          xytext=(0, 12), textcoords='offset pixels',
+        #                                          color='white', fontsize=10)
+        # self.label_time_right = self.pic.annotate('', (0, 0), xycoords='data',
+        #                                           xytext=(0, 12), textcoords='offset pixels',
+        #                                           color='white', fontsize=10)
+        # self.label_time_delta = self.pic.annotate('', (0, 0), xycoords='data',
+        #                                           xytext=(0, 0), textcoords='offset pixels',
+        #                                           color='white', fontsize=10)
 
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
@@ -216,18 +217,18 @@ class LineWidget(LineManager):
             self.label_right.set_visible(False)
             self.label_localmax.set_visible(False)
 
-            self.label_time_left.set_visible(False)
-            self.label_time_right.set_visible(False)
-            self.label_time_delta.set_visible(False)
+            # self.label_time_left.set_visible(False)
+            # self.label_time_right.set_visible(False)
+            # self.label_time_delta.set_visible(False)
         else:
             self.set_visible(True)
             self.label_left.set_visible(True)
             self.label_right.set_visible(True)
             self.label_localmax.set_visible(True)
 
-            self.label_time_left.set_visible(True)
-            self.label_time_right.set_visible(True)
-            self.label_time_delta.set_visible(True)
+            # self.label_time_left.set_visible(True)
+            # self.label_time_right.set_visible(True)
+            # self.label_time_delta.set_visible(True)
         self.func_line_update()
         self._update_indicator()
 
@@ -255,8 +256,8 @@ class LineWidget(LineManager):
             tmpy = 0
         self.label_left.set_position((tmpx, tmpy))
 
-        self.label_time_left.set_text(time_format_plot(tmpx))
-        self.label_time_left.xy = (tmpx,10)
+        # self.label_time_left.set_text(time_format_plot(tmpx))
+        # self.label_time_left.xy = (tmpx,10)
 
         # Right Line
         tmpx = self.x_selected_right
@@ -270,8 +271,8 @@ class LineWidget(LineManager):
             tmpy = 0
         self.label_right.set_position((tmpx, tmpy))
 
-        self.label_time_right.set_text(time_format_plot(tmpx))
-        self.label_time_right.xy = (tmpx, 10)
+        # self.label_time_right.set_text(time_format_plot(tmpx))
+        # self.label_time_right.xy = (tmpx, 10)
 
         # Local Max
         data_selected = self.get_data_selected()
@@ -284,12 +285,12 @@ class LineWidget(LineManager):
             self.label_localmax.set_text(f'Max:{tmpy:.2f}')
             self.label_localmax.set_visible(True)
 
-            self.label_time_delta.xy = (np.average([self.x_selected_right,self.x_selected_left]), 10)
-            self.label_time_delta.set_text(time_format_plot(abs(self.x_selected_right - self.x_selected_left)))
-            self.label_time_delta.set_visible(True)
+            # self.label_time_delta.xy = (np.average([self.x_selected_right,self.x_selected_left]), 10)
+            # self.label_time_delta.set_text(time_format_plot(abs(self.x_selected_right - self.x_selected_left)))
+            # self.label_time_delta.set_visible(True)
         else:
             self.label_localmax.set_visible(False)
-            self.label_time_delta.set_visible(False)
+            # self.label_time_delta.set_visible(False)
 
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
@@ -327,6 +328,10 @@ class LineContainer():
         self.time_container.grid(row=0)
         self._add_timeindicator(self.time_container)
 
+        self.label_time_left = None
+        self.label_time_right = None
+        self.label_time_delta = None
+
         self.widget_container = tk.LabelFrame(self.container, text='Widgets', bd=2)
         self.widget_container.grid(row=1,columnspan=3)
 
@@ -344,6 +349,19 @@ class LineContainer():
 
         self.canvas.create_window(0, 0, window=self.dframe)
         self._update_widget()
+
+    def init_time_label(self, pic):
+        # Time indicator
+        self.label_time_left = pic.annotate('', (0, 0), xycoords='data',
+                                                 xytext=(0, 12), textcoords='offset pixels',
+                                                 color='white', fontsize=10)
+        self.label_time_right = pic.annotate('', (0, 0), xycoords='data',
+                                                  xytext=(0, 12), textcoords='offset pixels',
+                                                  color='white', fontsize=10)
+        self.label_time_delta = pic.annotate('', (0, 0), xycoords='data',
+                                                  xytext=(0, 0), textcoords='offset pixels',
+                                                  color='white', fontsize=10)
+        self.label_time_delta.set_visible(False)
 
     # Time indicator 올리고 삭제
     def _add_timeindicator(self,master):
@@ -397,6 +415,15 @@ class LineContainer():
             tmp = abs(line.x_selected_right - line.x_selected_left)
             self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
 
+        self.label_time_left.set_text(time_format_plot(line.x_selected_left))
+        self.label_time_left.xy = (line.x_selected_left,10)
+
+        self.label_time_right.set_text(time_format_plot(line.x_selected_right))
+        self.label_time_right.xy = (line.x_selected_right, 10)
+
+        self.label_time_delta.xy = (np.average([line.x_selected_right, line.x_selected_left]), 10)
+        self.label_time_delta.set_text(time_format_plot(abs(line.x_selected_right - line.x_selected_left)))
+        self.label_time_delta.set_visible(True)
     def __del__(self):
         print('LineContainer has been deleted')
 
