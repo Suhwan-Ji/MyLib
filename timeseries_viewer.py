@@ -10,6 +10,13 @@ class TimeSeriesViewer():
         self.win.minsize(width=1800,height=900)
         #self.win.resizable(width=False,height=False)
 
+        self.optiontab = ttk.Notebook(self.win)
+        self.optiontab.grid(row=0,column=1)
+        frame1 = tk.Frame(self.optiontab)
+        frame2 = tk.Frame(self.optiontab)
+        self.optiontab.add(frame1,text='파일 읽기')
+        self.optiontab.add(frame2, text='Line관리')
+
         ###############################################################################################################
         # Init Attributes
         ###############################################################################################################
@@ -28,10 +35,10 @@ class TimeSeriesViewer():
         # Create Widgets
         ###############################################################################################################
         # Create Data selector
-        self.create_data_selector(self.win, [0, 1])
+        self.create_data_selector(frame2, [0, 0])
 
         # Create LineContainer
-        self.line_container = LineContainer(self.win, [1, 1])
+        self.line_container = LineContainer(frame2, [1, 0])
 
         # Create Canvas
         self.canvas = PlottingCanvas(self.win, self.line_container, [0, 0])
