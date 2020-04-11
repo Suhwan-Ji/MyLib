@@ -122,17 +122,6 @@ class LineWidget(LineManager):
                                                 fontsize=12,
                                                 horizontalalignment='right', verticalalignment='top')
 
-        # # 라인하나마다 전부 그리게되어있으므로 위로 올려야함
-        # self.label_time_left = self.pic.annotate('', (0, 0), xycoords='data',
-        #                                          xytext=(0, 12), textcoords='offset pixels',
-        #                                          color='white', fontsize=10)
-        # self.label_time_right = self.pic.annotate('', (0, 0), xycoords='data',
-        #                                           xytext=(0, 12), textcoords='offset pixels',
-        #                                           color='white', fontsize=10)
-        # self.label_time_delta = self.pic.annotate('', (0, 0), xycoords='data',
-        #                                           xytext=(0, 0), textcoords='offset pixels',
-        #                                           color='white', fontsize=10)
-
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
             self.label_right.set_c(kwargs['color'])
@@ -216,19 +205,12 @@ class LineWidget(LineManager):
             self.label_left.set_visible(False)
             self.label_right.set_visible(False)
             self.label_localmax.set_visible(False)
-
-            # self.label_time_left.set_visible(False)
-            # self.label_time_right.set_visible(False)
-            # self.label_time_delta.set_visible(False)
         else:
             self.set_visible(True)
             self.label_left.set_visible(True)
             self.label_right.set_visible(True)
             self.label_localmax.set_visible(True)
 
-            # self.label_time_left.set_visible(True)
-            # self.label_time_right.set_visible(True)
-            # self.label_time_delta.set_visible(True)
         self.func_line_update()
         self._update_indicator()
 
@@ -256,9 +238,6 @@ class LineWidget(LineManager):
             tmpy = 0
         self.label_left.set_position((tmpx, tmpy))
 
-        # self.label_time_left.set_text(time_format_plot(tmpx))
-        # self.label_time_left.xy = (tmpx,10)
-
         # Right Line
         tmpx = self.x_selected_right
         tmpy = self.get_value_whenx(tmpx, which='modified')
@@ -271,9 +250,6 @@ class LineWidget(LineManager):
             tmpy = 0
         self.label_right.set_position((tmpx, tmpy))
 
-        # self.label_time_right.set_text(time_format_plot(tmpx))
-        # self.label_time_right.xy = (tmpx, 10)
-
         # Local Max
         data_selected = self.get_data_selected()
         if len(data_selected) > 0:
@@ -284,13 +260,8 @@ class LineWidget(LineManager):
             self.label_localmax.xy = (t, y)
             self.label_localmax.set_text(f'Max:{tmpy:.2f}')
             self.label_localmax.set_visible(True)
-
-            # self.label_time_delta.xy = (np.average([self.x_selected_right,self.x_selected_left]), 10)
-            # self.label_time_delta.set_text(time_format_plot(abs(self.x_selected_right - self.x_selected_left)))
-            # self.label_time_delta.set_visible(True)
         else:
             self.label_localmax.set_visible(False)
-            # self.label_time_delta.set_visible(False)
 
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
@@ -439,3 +410,28 @@ class VerticalLine(matplotlib.lines.Line2D):
 
     def __del__(self):
         print('VerticalLine has been deleted')
+
+class DataSelector():
+    def __init__(self, master, grid_pos):
+        container = ttk.LabelFrame(master, text='데이터 리스트')
+        container.grid(row=grid_pos[0], column=grid_pos[1])
+
+        choosers = ttk.LabelFrame(container, text='선택스')
+        choosers.pack()
+
+        self.selected = tk.StringVar()
+        self.selector = ttk.Combobox(choosers, textvariable=self.selected)
+        self.selector.grid(row=0, column=0, rowspan=2)
+        self.button_main = ttk.Button(choosers, text='MainAdd')
+        self.button_main.grid(row=0, column=1)
+        self.button_bool = ttk.Button(choosers, text='BoolAdd')
+        self.button_bool.grid(row=1, column=1)
+
+    def set_datalist(self, datalist):
+        self.selector.config(values=list(datalist))
+
+    def bind_button_main(self, func):
+        self.button_main.config(command=lambda:func(self.selected.get()))
+
+    def bind_button_bool(self, func):
+        self.button_bool.config(command=lambda:func(self.selected.get()))

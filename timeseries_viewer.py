@@ -14,28 +14,21 @@ class TimeSeriesViewer():
         self.optiontab.grid(row=0,column=1)
         frame1 = tk.Frame(self.optiontab)
         frame2 = tk.Frame(self.optiontab)
-        self.optiontab.add(frame1,text='파일 읽기')
+        self.optiontab.add(frame1, text='파일 읽기')
         self.optiontab.add(frame2, text='Line관리')
 
         ###############################################################################################################
         # Init Attributes
         ###############################################################################################################
-        if data is not None:
-            self.data = data
-            self.datalist = data.columns[1:]
-        else:
-            # Launch Data Reader
-            print('Data 없이 런칭하기는 구현 안됨')
-            self.win.destroy()
-            return
-        self.Ts = Ts
-        self.time_col = time_col
+        self.data = None
+        self.datalist = None
+        self.time_col = None
 
         ###############################################################################################################
         # Create Widgets
         ###############################################################################################################
         # Create Data selector
-        self.create_data_selector(frame2, [0, 0])
+        self.dataselector = DataSelector(frame2, [0, 0])
 
         # Create LineContainer
         self.line_container = LineContainer(frame2, [1, 0])
@@ -60,15 +53,29 @@ class TimeSeriesViewer():
         # Main Picture에 TimeLabel 추가, 이부분 좀 꼬인듯
         self.line_container.init_time_label(self.canvas.pic_main)
 
-        self._initial_draw(predraw_col=predraw_col, draw_at_once=draw_at_once)
+        #self.win.focus_set(True)
+
+        if data is not None:
+            self.read_data(data, time_col, main_col, Ts)
+            self._initial_draw(predraw_col=predraw_col, draw_at_once=draw_at_once)
+            # 데이터가 있을경우 두번째 페이지 바로 선택되기 구현 필요함
+
+        self.win.mainloop()
+
+    def read_data(self, data, time_col, main_col, Ts):
+        self.data = data
+        self.datalist = data.columns[1:]
+        self.Ts = Ts
+        self.time_col = time_col
+
+        self.dataselector.set_datalist(self.datalist)
+        self.dataselector.bind_button_main(lambda x:self.add_col(self.pic_main, x))
+        self.dataselector.bind_button_bool(lambda x: self.add_col(self.pic_boolean, x))
 
         if (main_col is None) or (main_col not in self.datalist):
             main_col = self.datalist[0]
         self.canvas.pic_summary.plot(self.data[self.time_col], self.data[main_col], color='forestgreen')
         self.canvas.pic_summary.set_ylim(0,1000)
-
-        #self.win.focus_set(True)
-        self.win.mainloop()
 
     def _initial_draw(self, draw_at_once=False, predraw_col=None):
         if draw_at_once:
@@ -82,20 +89,6 @@ class TimeSeriesViewer():
             for col in dlist:
                 if col in self.datalist:
                     self.add_col(self.pic_main, col)
-
-    def create_data_selector(self,master, grid_pos):
-        container = ttk.LabelFrame(master, text='데이터 리스트')
-        container.grid(row=grid_pos[0], column=grid_pos[1])
-
-        choosers = ttk.LabelFrame(container, text='선택스')
-        choosers.pack()
-
-        dselected = tk.StringVar(value=self.datalist[0])
-        ttk.Combobox(choosers, value=list(self.datalist), textvariable=dselected).grid(row=0, column=0, rowspan=2)
-        ttk.Button(choosers, text='MainAdd',
-                   command=lambda: self.add_col(self.pic_main, dselected.get())).grid(row=0, column=1)
-        ttk.Button(choosers, text='BoolAdd',
-                   command=lambda: self.add_col(self.pic_boolean, dselected.get())).grid(row=1, column=1)
 
     def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
