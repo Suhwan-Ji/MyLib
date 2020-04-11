@@ -42,6 +42,7 @@ class TimeSeriesViewer():
         self.button_test = tk.Button(self.win, text='clearTest',command=self._clear_test)
         self.button_test.grid(row=2,column=3)
 
+#        LineConfigurator()
         ###############################################################################################################
         # Initialize
         ###############################################################################################################

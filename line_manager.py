@@ -146,22 +146,6 @@ class LineWidget(LineManager):
         self.button_show.config(command=_button_show_callback)
         self.button_show.grid(row=0, column=0)
 
-
-        def _button_apply_callback():
-            if self.entry1.instate(['readonly']):
-                self.entry1.state(['!readonly'])
-                self.entry2.state(['!readonly'])
-                self.button_apply.config(text='apply >')
-            elif self.entry1.instate(['!readonly']):
-                self.entry1.state(['readonly'])
-                self.entry2.state(['readonly'])
-                self.set_lm_value('gain',float(self.entry1.get()))
-                self.set_lm_value('offset', float(self.entry2.get()))
-                self.button_apply.config(text='modify >')
-        self.button_apply = tk.Button(self.manager, text='modify >', width=6)
-        self.button_apply.config(command=_button_apply_callback)
-        self.button_apply.grid(row=1, column=0)
-
         def _update_lineitem(item,spinbox):
             tmp = float(spinbox.get())
             self.set_lm_value(item,tmp)
@@ -173,14 +157,6 @@ class LineWidget(LineManager):
         self.spin1.grid(row=0, column=0)
         self.spin1.set(self.get_lm_value('position'))
 
-        self.frame_gain = tk.LabelFrame(self.manager, text='(* gain)')
-        self.frame_gain.grid(row=1, column=2)
-
-        self.entry1 = ttk.Entry(self.frame_gain, width=5)
-        self.entry1.grid(row=0, column=0)
-        self.entry1.insert(0,string=str(self.get_lm_value('gain')))
-        self.entry1.state(['readonly'])
-
         self.frame_scale = tk.LabelFrame(self.manager, text='한칸당')
         self.frame_scale.grid(row=0, column=3)
         self.spin2 = ttk.Spinbox(self.frame_scale, values=self.list_scale, width=5, state='readonly')
@@ -188,16 +164,13 @@ class LineWidget(LineManager):
         self.spin2.grid(row=0, column=0)
         self.spin2.set(self.get_lm_value('scale'))
 
-        self.frame_offset = tk.LabelFrame(self.manager, text='(+ offset)')
-        self.frame_offset.grid(row=1, column=3)
-
-        self.entry2 = ttk.Entry(self.frame_offset, width=5)
-        self.entry2.grid(row=0, column=0)
-        self.entry2.insert(0, string=str(self.get_lm_value('offset')))
-        self.entry2.state(['readonly'])
+        ttk.Button(self.manager, text='option',width=5, command=self._line_option_popup).grid(row=0,column=4)
 
         ttk.Button(self.manager, text='del',command=self.func_destroy,width=3).grid(row=0,column=5)
         self._update_indicator()
+
+    def _line_option_popup(self):
+        LineConfigurator(self)
 
     def toggle_visible(self):
         if self.get_visible():
@@ -274,6 +247,33 @@ class LineWidget(LineManager):
 
     def __del__(self):
         print(f'{self.data_name} has been deleted')
+
+
+class LineConfigurator():
+    def __init__(self, line):
+        self.line = line
+
+        self.win = tk.Toplevel()
+        self.win.title('라인설정 팝업')
+        self.manager = tk.LabelFrame(self.win, text=line.data_name+' 설정')
+        self.manager.grid(row=0, column=0)
+
+        tk.Label(self.manager, text='(* gain)').grid(row=0, column=0)
+        self.entry1 = ttk.Entry(self.manager, width=5)
+        self.entry1.grid(row=1, column=0)
+        self.entry1.insert(0, string=str(self.line.get_lm_value('gain')))
+
+        tk.Label(self.manager, text='(+ offset)').grid(row=0, column=1)
+        self.entry2 = ttk.Entry(self.manager, width=5)
+        self.entry2.grid(row=1, column=1)
+        self.entry2.insert(0, string=str(self.line.get_lm_value('offset')))
+
+        button_apply = tk.Button(self.manager, text='apply', command=self._apply)
+        button_apply.grid(row=0, column=2, rowspan=2)
+
+    def _apply(self):
+        self.line.set_lm_value('gain', float(self.entry1.get()))
+        self.line.set_lm_value('offset', float(self.entry2.get()))
 
 
 class LineContainer():
