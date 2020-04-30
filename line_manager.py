@@ -6,13 +6,6 @@ import pandas as pd
 import numpy as np
 from func_util import time_format_plot
 
-def time_format(x):
-    hour, rest = np.divmod(x, 3600)
-    minute, second = np.divmod(rest, 60)
-    # second, rest = np.divmod(rest, 100)
-    return f"{int(hour)}시간 {int(minute)}분\n{second:.3f}초"
-
-
 class LineManager(matplotlib.lines.Line2D):
     def __init__(self, x, y, func_line_update, offset=0, gain=1, position=0, scale=1, **kwargs):
         matplotlib.lines.Line2D.__init__(self, x, y, **kwargs)
@@ -120,7 +113,14 @@ class LineWidget(LineManager):
                                                 xytext=(-30, 30), textcoords='offset pixels',
                                                 arrowprops=dict(facecolor='white', shrink=0.05),
                                                 fontsize=12,
-                                                horizontalalignment='right', verticalalignment='top')
+                                                horizontalalignment='right', verticalalignment='top',
+                                                visible=False)
+
+        self.annotate_visible = {
+            'left':True,
+            'right':True,
+            'localmax':False
+        }
 
         if 'color' in kwargs:
             self.label_left.set_c(kwargs['color'])
@@ -177,12 +177,12 @@ class LineWidget(LineManager):
             self.set_visible(False)
             self.label_left.set_visible(False)
             self.label_right.set_visible(False)
-            self.label_localmax.set_visible(False)
+            #self.label_localmax.set_visible(False)
         else:
             self.set_visible(True)
             self.label_left.set_visible(True)
             self.label_right.set_visible(True)
-            self.label_localmax.set_visible(True)
+            #self.label_localmax.set_visible(True)
 
         self.func_line_update()
         self._update_indicator()
@@ -224,17 +224,18 @@ class LineWidget(LineManager):
         self.label_right.set_position((tmpx, tmpy))
 
         # Local Max
-        data_selected = self.get_data_selected()
-        if len(data_selected) > 0:
-            index_local_max = pd.Series.idxmax(data_selected)
-            y = self.get_ydata()[index_local_max]
-            t = self.get_xdata()[index_local_max]
-            tmpy = self.get_modified_ydata()[index_local_max]
-            self.label_localmax.xy = (t, y)
-            self.label_localmax.set_text(f'Max:{tmpy:.2f}')
-            self.label_localmax.set_visible(True)
-        else:
-            self.label_localmax.set_visible(False)
+        if self.annotate_visible['localmax']:
+            data_selected = self.get_data_selected()
+            if len(data_selected) > 0:
+                index_local_max = pd.Series.idxmax(data_selected)
+                y = self.get_ydata()[index_local_max]
+                t = self.get_xdata()[index_local_max]
+                tmpy = self.get_modified_ydata()[index_local_max]
+                self.label_localmax.xy = (t, y)
+                self.label_localmax.set_text(f'Max:{tmpy:.2f}')
+                self.label_localmax.set_visible(True)
+            else:
+                self.label_localmax.set_visible(False)
 
     def get_data_selected(self):
         index_min = self._find_closest_index(np.minimum(self.x_selected_left,self.x_selected_right))
@@ -293,11 +294,6 @@ class LineContainer():
         self.list_linewidget = {}
         self.container = tk.LabelFrame(master, text='Lines', bd=2)
         self.container.grid(row=grid_pos[0], column=grid_pos[1])
-
-        # Time indicator 올리고 삭제
-        self.time_container = tk.LabelFrame(self.container, text='Times', bd=2)
-        self.time_container.grid(row=0)
-        self._add_timeindicator(self.time_container)
 
         self.label_time_left = None
         self.label_time_right = None
@@ -379,13 +375,6 @@ class LineContainer():
         for line in self.list_linewidget.values():
             line.update_selected_x(x,action=action)
 
-        # Time indicator 올리고 삭제
-        if len(self.list_linewidget) > 0:
-            self.time_selected_left.set(f'Start : \n{time_format(line.x_selected_left)}')
-            self.time_selected_right.set(f'End : \n{time_format(line.x_selected_right)}')
-            tmp = abs(line.x_selected_right - line.x_selected_left)
-            self.time_selected_delta.set(f'Delata : \n{time_format(tmp)}')
-
         self.label_time_left.set_text(time_format_plot(line.x_selected_left))
         self.label_time_left.xy = (line.x_selected_left,10)
 
@@ -395,6 +384,7 @@ class LineContainer():
         self.label_time_delta.xy = (np.average([line.x_selected_right, line.x_selected_left]), 10)
         self.label_time_delta.set_text(time_format_plot(abs(line.x_selected_right - line.x_selected_left)))
         self.label_time_delta.set_visible(True)
+
     def __del__(self):
         print('LineContainer has been deleted')
 

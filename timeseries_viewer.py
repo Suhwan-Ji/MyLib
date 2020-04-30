@@ -31,7 +31,7 @@ class TimeSeriesViewer():
         self.dataselector = DataSelector(frame2, [0, 0])
 
         # Create LineContainer
-        self.line_container = LineContainer(frame2, [1, 0])
+        self.line_container = LineContainer(self.win, [1, 1])
 
         # Create Canvas
         self.canvas = PlottingCanvas(self.win, self.line_container, [0, 0])
@@ -70,7 +70,7 @@ class TimeSeriesViewer():
         self.time_col = time_col
 
         self.dataselector.set_datalist(self.datalist)
-        self.dataselector.bind_button_main(lambda x:self.add_col(self.pic_main, x))
+        self.dataselector.bind_button_main(lambda x: self.add_col(self.pic_main, x))
         self.dataselector.bind_button_bool(lambda x: self.add_col(self.pic_boolean, x))
 
         if (main_col is None) or (main_col not in self.datalist):
@@ -93,7 +93,7 @@ class TimeSeriesViewer():
 
     def add_col(self, ax, col):
         self.line_container.add_linewidget(ax, self.data, col, self.canvas.update, time_col=self.time_col,\
-                                           alpha=0.5, drawstyle='steps-post',linewidth=1.5)#marker='o',markersize=1,
+                                           alpha=0.5, drawstyle='steps-post',linewidth=1.5, visible=True)#marker='o',markersize=1,
 
     def _test(self):
         data = self.line_container.list_linewidget['dat2'].get_data_selected()
@@ -127,4 +127,4 @@ if __name__ == '__main__':
     data['dat4'] = 0.2 * np.random.randn(dlen) + data['dat3']
     data['dat5'] = 0.1 * np.random.randn(dlen) + data['dat4']
 
-    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'],Ts=Ts)#,draw_at_once=True)
+    a = TimeSeriesViewer(data,main_col='dat1',predraw_col=['dat1','dat2'],Ts=Ts)#, draw_at_once=True)
